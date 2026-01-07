@@ -1,0 +1,109 @@
+.container {
+    background: var(--bg-secondary);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    margin-top: var(--spacing-md);
+}
+
+.title {
+    font-size: var(--font-size-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: var(--spacing-sm);
+}
+
+.list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.item {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-sm);
+    background: var(--bg-primary);
+    border-radius: var(--radius-sm);
+    transition: var(--transition-base);
+    border: 1px solid transparent;
+}
+
+.item:hover {
+    border-color: var(--border-color);
+    transform: translateX(4px);
+}
+
+.item.done {
+    opacity: 0.6;
+}
+
+.label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    width: 100%;
+    position: relative;
+}
+
+.checkbox {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.checkmark {
+    height: 20px;
+    width: 20px;
+    background-color: var(--bg-secondary);
+    border: 2px solid var(--text-muted);
+    border-radius: 4px;
+    margin-right: var(--spacing-md);
+    position: relative;
+    transition: var(--transition-base);
+}
+
+.item:hover .checkmark {
+    border-color: var(--accent-secondary);
+}
+
+.checkbox:checked~.checkmark {
+    background-color: var(--success);
+    border-color: var(--success);
+}
+
+.checkmark::after {
+    content: "";
+    position: absolute;
+    display: none;
+    left: 6px;
+    top: 2px;
+    width: 4px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.checkbox:checked~.checkmark::after {
+    display: block;
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+}
+
+.name {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.owner {
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+}
