@@ -12,8 +12,9 @@ const getStatusColor = (status) => {
         case 'Pending':
             return 'bg-slate-100 text-slate-600 focus:ring-slate-400';
         case 'Planning':
-        case 'Release plan planning':
             return 'bg-blue-100 text-blue-700 focus:ring-blue-400';
+        case 'Release plan planning':
+            return 'bg-teal-100 text-teal-700 focus:ring-teal-400';
         case 'Ready for review':
             return 'bg-purple-100 text-purple-700 focus:ring-purple-400';
         case 'Ready for dev':
