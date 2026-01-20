@@ -1,0 +1,242 @@
+import React, { useState } from 'react';
+import { useReleaseData } from '../hooks/useReleaseData';
+import { Calendar, Clock, Plus, Trash2, Target, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
+
+const InitiativeLiveStatus = () => {
+    const { data, updateInitiativeMeta, addDeliverable, updateDeliverable, deleteDeliverable } = useReleaseData();
+    const initiative = data?.Initiative || {};
+    const [isAdding, setIsAdding] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(true);
+    const [newDeliverableName, setNewDeliverableName] = useState('');
+    const [newDeliverableDate, setNewDeliverableDate] = useState('');
+
+    const handleAddDeliverable = (e) => {
+        if (e) e.preventDefault();
+        if (!newDeliverableName) return;
+
+        addDeliverable({
+            name: newDeliverableName,
+            date: newDeliverableDate || '',
+            status: 'pending'
+        });
+
+        setNewDeliverableName('');
+        setNewDeliverableDate('');
+        setIsAdding(false);
+    };
+
+    return (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+            <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="w-full bg-ss-navy px-6 py-3 flex justify-between items-center text-white hover:bg-ss-navy/95 transition-colors"
+            >
+                <div className="flex items-center gap-2">
+                    <Target className="w-5 h-5 text-blue-400" />
+                    <h2 className="font-bold text-lg lowercase first-letter:uppercase text-slate-100">Initiative Live Status</h2>
+                    <span className="text-ss-action text-[10px] font-black ml-2 bg-blue-50/10 px-2 py-0.5 rounded border border-blue-400/20 uppercase tracking-tighter">WEEKLY SYNC VIEW</span>
+                </div>
+                <div className="flex items-center gap-6">
+                    <div className="hidden md:flex items-center gap-2 text-xs text-blue-200 uppercase tracking-widest font-bold">
+                        <Clock className="w-3 h-3" />
+                        Updated: {new Date().toLocaleDateString()}
+                    </div>
+                    {isExpanded ? <ChevronUp className="w-5 h-5 text-blue-400" /> : <ChevronDown className="w-5 h-5 text-blue-400" />}
+                </div>
+            </button>
+
+            {isExpanded && (
+                <div className="p-6 grid grid-cols-1 lg:grid-cols-[300px_1fr_240px] gap-8 animate-in fade-in slide-in-from-top-2 duration-300">
+                    {/* Column 1: Overall Status & Focus */}
+                    <div className="flex flex-col gap-6">
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5 px-1 underline decoration-slate-200 underline-offset-4">Overall Status</label>
+                            <select
+                                value={initiative.Status || 'Initial Planning'}
+                                onChange={(e) => updateInitiativeMeta('Status', e.target.value)}
+                                className={`w-full p-2.5 rounded-xl border-2 font-black text-sm transition-all focus:ring-4 focus:ring-ss-primary/10 outline-none ${initiative.Status === 'Initial Planning' ? 'bg-blue-50 text-blue-700 border-blue-300' :
+                                    initiative.Status === 'Release Planning' ? 'bg-purple-50 text-purple-700 border-purple-300' :
+                                        initiative.Status === 'Development' ? 'bg-amber-50 text-amber-700 border-amber-300' :
+                                            initiative.Status === 'Released' ? 'bg-green-50 text-green-700 border-green-300' :
+                                                'bg-slate-50 text-slate-700 border-slate-300'
+                                    }`}
+                            >
+                                <option value="Initial Planning">Initial Planning</option>
+                                <option value="Release Planning">Release Planning</option>
+                                <option value="Development">Development</option>
+                                <option value="Released">Released</option>
+                                <option value="On Hold">On Hold</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5 px-1 underline decoration-slate-200 underline-offset-4">Current Focus / Detailed Status</label>
+                            <textarea
+                                value={initiative.detailedStatus || ''}
+                                onChange={(e) => updateInitiativeMeta('detailedStatus', e.target.value)}
+                                className="w-full p-4 rounded-xl border-2 border-slate-100 text-sm italic text-slate-700 bg-slate-50/30 min-h-[140px] outline-none focus:border-ss-primary/50 focus:bg-white transition-all resize-none shadow-sm"
+                                placeholder="Type a quick summary..."
+                            />
+                        </div>
+
+                        <div className="bg-red-50/50 rounded-xl p-5 border-2 border-slate-900 border-dashed mt-auto">
+                            <div className="flex items-center gap-2 mb-2">
+                                <AlertCircle className="w-4 h-4 text-red-600" />
+                                <span className="text-[10px] font-black text-red-600 uppercase tracking-widest">Sync Reminder</span>
+                            </div>
+                            <p className="text-xs text-red-700 font-black leading-relaxed">
+                                Ensure all release plans below align with these primary target dates.
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Column 2: Deliverables & Milestones (NOW IN THE MIDDLE) */}
+                    <div className="flex flex-col gap-4 border-l border-slate-100 lg:pl-8">
+                        <div className="flex justify-between items-center px-1 mb-1">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                Next Deliverables & Milestones
+                                <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded text-[9px] font-bold">{initiative.deliverables?.length || 0}</span>
+                            </label>
+                            {!isAdding && (
+                                <button
+                                    onClick={() => setIsAdding(true)}
+                                    className="px-3 py-1 bg-ss-action text-white text-[10px] font-black rounded-lg border-b-2 border-blue-700 flex items-center gap-1.5 hover:bg-ss-primary transition-all active:scale-95"
+                                >
+                                    <Plus className="w-3 h-3" /> ADD DELIVERABLE
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="flex flex-col gap-3">
+                            {isAdding && (
+                                <form onSubmit={handleAddDeliverable} className="bg-ss-navy/5 p-4 rounded-2xl border-2 border-ss-navy/10 flex items-center gap-4 animate-in slide-in-from-top-2 duration-200">
+                                    <div className="flex-1">
+                                        <input
+                                            autoFocus
+                                            value={newDeliverableName}
+                                            onChange={(e) => setNewDeliverableName(e.target.value)}
+                                            placeholder="What needs to be done?"
+                                            className="w-full text-sm p-2.5 rounded-lg border-2 border-slate-200 bg-white outline-none focus:border-ss-primary transition-all font-bold text-ss-navy"
+                                        />
+                                    </div>
+                                    <div className="w-36">
+                                        <input
+                                            type="date"
+                                            value={newDeliverableDate}
+                                            onChange={(e) => setNewDeliverableDate(e.target.value)}
+                                            className="w-full text-xs p-2.5 rounded-lg border-2 border-slate-200 bg-white text-ss-navy outline-none focus:border-ss-primary transition-all font-black"
+                                        />
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            type="submit"
+                                            disabled={!newDeliverableName}
+                                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${!newDeliverableName
+                                                ? 'bg-slate-200 text-slate-400 border-2 border-slate-200'
+                                                : 'bg-ss-action text-white hover:bg-ss-primary border-b-[4px] border-blue-700'
+                                                }`}
+                                        >
+                                            <Plus className="w-6 h-6" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsAdding(false)}
+                                            className="w-10 h-10 rounded-xl flex items-center justify-center bg-white border-2 border-slate-200 text-slate-400 hover:text-slate-600"
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+
+                            <div className="flex flex-col gap-3">
+                                {/* Headers */}
+                                <div className="flex items-center gap-4 px-4 text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
+                                    <div className="flex-1">TASK / DELIVERABLE</div>
+                                    <div className="w-36 text-center">DUE DATE</div>
+                                    <div className="w-10 text-center">DEL</div>
+                                </div>
+
+                                {/* List */}
+                                <div className="max-h-[500px] overflow-auto flex flex-col gap-3 pr-1 custom-scrollbar">
+                                    {[...(initiative.deliverables || [])].sort((a, b) => {
+                                        if (!a.date) return 1;
+                                        if (!b.date) return -1;
+                                        return new Date(a.date) - new Date(b.date);
+                                    }).map((del) => (
+                                        <div key={del.id} className="group bg-white border-2 border-slate-900 p-3 rounded-2xl flex items-center gap-4 hover:border-ss-primary transition-all">
+                                            <div className="flex-1">
+                                                <input
+                                                    value={del.name}
+                                                    onChange={(e) => updateDeliverable(del.id, { name: e.target.value })}
+                                                    className="w-full bg-transparent border-none p-0 text-sm font-black text-ss-navy focus:ring-0 outline-none"
+                                                    placeholder="Deliverable name..."
+                                                />
+                                            </div>
+
+                                            <div className="w-36 flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border-2 border-slate-100 group-hover:border-slate-300 transition-colors">
+                                                <Calendar className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                                                <input
+                                                    type="date"
+                                                    value={del.date || ''}
+                                                    onChange={(e) => updateDeliverable(del.id, { date: e.target.value })}
+                                                    className="bg-transparent border-none p-0 text-[11px] font-black text-ss-navy focus:ring-0 outline-none cursor-pointer w-full text-center"
+                                                />
+                                            </div>
+
+                                            <div className="w-10 flex justify-center">
+                                                <button
+                                                    onClick={() => deleteDeliverable(del.id)}
+                                                    className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                                    title="Delete"
+                                                >
+                                                    <Trash2 className="w-5 h-5" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Column 3: Target Dates (NOW ON THE RIGHT & SMALLER) */}
+                    <div className="flex flex-col gap-10 border-l border-slate-100 lg:pl-8">
+                        <div className="pt-2">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2 px-1 flex items-center gap-2">
+                                <Clock className="w-3.5 h-3.5 text-ss-primary" /> Internal Release
+                            </label>
+                            <div className="flex flex-col gap-2">
+                                <input
+                                    type="date"
+                                    size="sm"
+                                    value={initiative.internalReleaseDate || ''}
+                                    onChange={(e) => updateInitiativeMeta('internalReleaseDate', e.target.value)}
+                                    className="w-full p-2.5 rounded-xl border-2 border-slate-900 font-bold text-sm text-ss-navy focus:ring-4 focus:ring-ss-primary/10 outline-none transition-all shadow-sm"
+                                />
+                                <span className="text-[8px] font-black text-red-500 uppercase tracking-widest ml-1 bg-red-50 w-fit px-1.5 rounded">Target Ref</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2 px-1 flex items-center gap-2">
+                                <Calendar className="w-3.5 h-3.5 text-emerald-600" /> External Launch
+                            </label>
+                            <div className="flex flex-col gap-2">
+                                <input
+                                    type="date"
+                                    value={initiative.externalReleaseDate || ''}
+                                    onChange={(e) => updateInitiativeMeta('externalReleaseDate', e.target.value)}
+                                    className="w-full p-2.5 rounded-xl border-2 border-slate-900 font-bold text-sm text-ss-navy focus:ring-4 focus:ring-ss-primary/10 outline-none transition-all shadow-sm"
+                                />
+                                <span className="text-[8px] font-black text-red-500 uppercase tracking-widest ml-1 bg-red-50 w-fit px-1.5 rounded">PUBLIC Launch</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default InitiativeLiveStatus;

@@ -1,8 +1,29 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Search } from 'lucide-react';
-import { sheetsService } from '../services/googleSheets';
+import { format } from 'date-fns';
+import { Plus, Search, Trash2, GripVertical } from 'lucide-react';
+import { dataService } from '../services/dataService';
 import NewInitiativeModal from '../components/NewInitiativeModal';
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
+import TimelineView from '../components/TimelineView';
+
+// dnd-kit imports
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+    useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // Dropdown options based on user schema
 const STATUS_OPTIONS = ['Initial Planning', 'Release Planning', 'Development', 'Released'];
@@ -10,13 +31,163 @@ const PM_OPTIONS = ['Naama', 'Asaf', 'Sapir'];
 const UX_OPTIONS = ['Tal', 'Maya', 'Naor'];
 const GROUP_OPTIONS = ['Zebra', 'Pegasus'];
 
+const SortableInitiativeRow = ({
+    init,
+    handleFieldChange,
+    handleDeleteInitiative,
+    STATUS_OPTIONS,
+    PM_OPTIONS,
+    UX_OPTIONS,
+    GROUP_OPTIONS
+}) => {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging
+    } = useSortable({ id: init.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 50 : 'auto',
+        position: 'relative'
+    };
+
+    return (
+        <tr
+            ref={setNodeRef}
+            style={style}
+            className={`hover:bg-slate-50 transition-colors group ${isDragging ? 'bg-white shadow-lg opacity-80' : ''}`}
+        >
+            <td className="w-10 px-4">
+                <button
+                    {...attributes}
+                    {...listeners}
+                    className="p-1 text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing"
+                    title="Drag to reorder"
+                >
+                    <GripVertical className="w-4 h-4" />
+                </button>
+            </td>
+            <td className="px-6 py-4 font-medium text-slate-900">
+                <Link
+                    to={`/plan/${encodeURIComponent(init.id)}`}
+                    className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                    title={init.name}
+                >
+                    {init.name}
+                </Link>
+            </td>
+            <td className="px-6 py-4">
+                <select
+                    value={init.status}
+                    onChange={(e) => handleFieldChange(init.id, 'status', e.target.value)}
+                    className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider w-full text-center border-none focus:ring-2 focus:ring-blue-400 outline-none transition-all ${init.status === 'Initial Planning' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
+                        init.status === 'Release Planning' ? 'bg-purple-50 text-purple-600 border border-purple-100' :
+                            init.status === 'Development' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
+                                init.status === 'Released' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                                    'bg-slate-50 text-slate-600 border border-slate-100'
+                        }`}
+                >
+                    {STATUS_OPTIONS.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                </select>
+            </td>
+            <td className="px-6 py-4">
+                <select
+                    value={init.pm || ''}
+                    onChange={(e) => handleFieldChange(init.id, 'pm', e.target.value)}
+                    className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none w-full text-slate-600"
+                >
+                    <option value="">Select PM</option>
+                    {PM_OPTIONS.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                </select>
+            </td>
+            <td className="px-6 py-4">
+                <select
+                    value={init.ux || ''}
+                    onChange={(e) => handleFieldChange(init.id, 'ux', e.target.value)}
+                    className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none w-full text-slate-600"
+                >
+                    <option value="">Select UX</option>
+                    {UX_OPTIONS.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                </select>
+            </td>
+            <td className="px-6 py-4">
+                <select
+                    value={init.group || ''}
+                    onChange={(e) => handleFieldChange(init.id, 'group', e.target.value)}
+                    className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none w-full text-slate-600"
+                >
+                    <option value="">Select Group</option>
+                    {GROUP_OPTIONS.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                </select>
+            </td>
+            <td className="px-6 py-4">
+                <input
+                    value={init.techLead || ''}
+                    title={init.techLead || ''}
+                    onChange={(e) => handleFieldChange(init.id, 'techLead', e.target.value)}
+                    className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none w-full text-slate-600 truncate"
+                    placeholder="Lead"
+                />
+            </td>
+            <td className="px-6 py-4 text-slate-500 text-xs">
+                <input
+                    value={Array.isArray(init.developers) ? init.developers.join(', ') : init.developers || ''}
+                    title={Array.isArray(init.developers) ? init.developers.join(', ') : init.developers || ''}
+                    onChange={(e) => handleFieldChange(init.id, 'developers', e.target.value.split(',').map(d => d.trim()))}
+                    className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none w-full text-slate-600 truncate"
+                    placeholder="Devs..."
+                />
+            </td>
+            <td className="px-6 py-4 text-slate-500 text-xs text-right">
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleDeleteInitiative(init.id, init.name);
+                    }}
+                    className="p-2 text-slate-300 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50"
+                    title="Delete Initiative"
+                >
+                    <Trash2 className="w-4 h-4" />
+                </button>
+            </td>
+        </tr>
+    );
+};
+
 const Dashboard = () => {
     const [initiatives, setInitiatives] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [deleteModal, setDeleteModal] = useState({ isOpen: false, item: null });
     const navigate = useNavigate();
     const syncTimeoutRef = useRef({});
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
 
     useEffect(() => {
         loadInitiatives();
@@ -26,7 +197,7 @@ const Dashboard = () => {
         try {
             setIsLoading(true);
 
-            if (!sheetsService.isConfigured()) {
+            if (!dataService.isConfigured()) {
                 setInitiatives([
                     { id: '1', name: 'Demo Initiative', status: 'Initial Planning', pm: 'Naama', ux: 'Tal', group: 'Zebra', techLead: 'John', developers: ['Alice', 'Bob'] },
                 ]);
@@ -34,11 +205,11 @@ const Dashboard = () => {
                 return;
             }
 
-            const releases = await sheetsService.getAllReleases();
+            const releases = await dataService.getDashboardTimelineData();
             setInitiatives(releases);
         } catch (err) {
             console.error("Failed to load initiatives:", err);
-            setError("Failed to load initiatives. Please check your connection.");
+            setError("Failed to load initiatives. Please check your Supabase configuration.");
         } finally {
             setIsLoading(false);
         }
@@ -52,14 +223,11 @@ const Dashboard = () => {
 
         syncTimeoutRef.current[initiativeId] = setTimeout(async () => {
             try {
-                if (!sheetsService.isConfigured()) return;
+                if (!dataService.isConfigured()) return;
 
-                const initiative = initiatives.find(i => i.id === initiativeId);
-                if (!initiative) return;
-
-                await sheetsService.updateInitiative(initiative.rowIndex, { [field]: value });
+                await dataService.updateInitiative(initiativeId, { [field]: value });
             } catch (err) {
-                console.error('Failed to sync to sheet:', err);
+                console.error('Failed to sync to database:', err);
             }
         }, 1000);
     }, [initiatives]);
@@ -73,11 +241,108 @@ const Dashboard = () => {
 
     const handleCreateInitiative = async (name) => {
         try {
-            await sheetsService.createInitiative(name);
-            navigate(`/plan/${encodeURIComponent(name)}`);
+            const result = await dataService.createInitiative(name);
+            navigate(`/plan/${result.id}`);
         } catch (err) {
             console.error('Failed to create initiative:', err);
             throw err;
+        }
+    };
+    const handleDeleteInitiative = async (id, name) => {
+        setDeleteModal({
+            isOpen: true,
+            item: { id, name }
+        });
+    };
+
+    const confirmDelete = async () => {
+        const { id } = deleteModal.item;
+        try {
+            if (dataService.isConfigured()) {
+                await dataService.deleteInitiative(id);
+            }
+            setInitiatives(prev => prev.filter(init => init.id !== id));
+        } catch (err) {
+            console.error('Failed to delete initiative:', err);
+            alert('Failed to delete initiative. Please check your database connection.');
+        }
+    };
+    const handleTimelineUpdate = async (item, newStartDate, newEndDate) => {
+        try {
+            const updates = {};
+            const startDateStr = format(newStartDate, 'yyyy-MM-dd');
+            const endDateStr = format(newEndDate, 'yyyy-MM-dd');
+
+            if (item.type === 'initiative-planning') {
+                await dataService.updateInitialPlanning(item.initiativeId, {
+                    StartDate: startDateStr,
+                    PlannedEndDate: endDateStr
+                });
+            } else if (item.type === 'release-planning') {
+                await dataService.updateReleasePlan(item.initiativeId, item.releaseId, {
+                    planningStartDate: startDateStr,
+                    planningEndDate: endDateStr
+                });
+            } else if (item.type === 'release-dev') {
+                await dataService.updateReleasePlan(item.initiativeId, item.releaseId, {
+                    devStartDate: startDateStr,
+                    devEndDate: endDateStr
+                });
+            }
+
+            // Optimistic update
+            setInitiatives(prev => prev.map(init => {
+                if (init.id === item.initiativeId) {
+                    if (item.type === 'initiative-planning') {
+                        return {
+                            ...init,
+                            initialPlanning: {
+                                ...init.initialPlanning,
+                                start_date: startDateStr,
+                                planned_end_date: endDateStr
+                            }
+                        };
+                    } else {
+                        return {
+                            ...init,
+                            releasePlans: init.releasePlans.map(rp => {
+                                if (rp.id === item.releaseId) {
+                                    if (item.type === 'release-planning') {
+                                        return { ...rp, planning_start_date: startDateStr, planning_end_date: endDateStr };
+                                    } else {
+                                        return { ...rp, dev_start_date: startDateStr, dev_end_date: endDateStr };
+                                    }
+                                }
+                                return rp;
+                            })
+                        };
+                    }
+                }
+                return init;
+            }));
+        } catch (err) {
+            console.error("Failed to update date from timeline:", err);
+            loadInitiatives(); // Rollback on error
+        }
+    };
+
+    const handleDragEnd = async (event) => {
+        const { active, over } = event;
+
+        if (active && over && active.id !== over.id) {
+            setInitiatives((items) => {
+                const oldIndex = items.findIndex((i) => i.id === active.id);
+                const newIndex = items.findIndex((i) => i.id === over.id);
+                const newOrderedItems = arrayMove(items, oldIndex, newIndex);
+
+                // Save new order to database
+                if (dataService.isConfigured()) {
+                    dataService.updateInitiativeOrder(newOrderedItems.map(i => i.id))
+                        .catch(err => console.error("Failed to sync new order:", err));
+                }
+
+                return newOrderedItems;
+            });
         }
     };
 
@@ -95,8 +360,8 @@ const Dashboard = () => {
     return (
         <div className="space-y-8">
             <div className="flex justify-between items-center">
-                <div className="flex items-center gap-4">
-                    <img src="https://sundaysky.com/wp-content/uploads/2022/11/Sundaysky-logo-02.png" alt="SundaySky" className="h-10" />
+                <div className="flex items-center gap-5">
+                    <img src="/logo.png" alt="SundaySky" className="h-16 w-auto" />
                     <div>
                         <h1 className="text-3xl font-bold text-ss-navy">Initiatives Dashboard</h1>
                         <p className="text-slate-500 mt-1">Manage and track all strategic initiatives.</p>
@@ -111,6 +376,8 @@ const Dashboard = () => {
                 </button>
             </div>
 
+            <TimelineView data={initiatives} onUpdateItem={handleTimelineUpdate} />
+
             {error && (
                 <div className="bg-red-50 text-red-700 p-4 rounded-lg border border-red-200">
                     {error}
@@ -122,97 +389,42 @@ const Dashboard = () => {
                     <table className="w-full text-left text-sm">
                         <thead className="bg-slate-50 border-b border-slate-200">
                             <tr>
-                                <th className="px-6 py-4 font-semibold text-slate-900 w-1/4">Initiative Name</th>
-                                <th className="px-6 py-4 font-semibold text-slate-900">Status</th>
-                                <th className="px-6 py-4 font-semibold text-slate-900">PM</th>
-                                <th className="px-6 py-4 font-semibold text-slate-900">UX</th>
-                                <th className="px-6 py-4 font-semibold text-slate-900">Group</th>
-                                <th className="px-6 py-4 font-semibold text-slate-900">Tech Lead</th>
-                                <th className="px-6 py-4 font-semibold text-slate-900">Developers</th>
+                                <th className="w-10"></th>
+                                <th className="px-6 py-4 font-semibold text-slate-900 w-[25%]">Initiative Name</th>
+                                <th className="px-6 py-4 font-semibold text-slate-900 w-[200px]">Status</th>
+                                <th className="px-6 py-4 font-semibold text-slate-900 w-[80px]">PM</th>
+                                <th className="px-6 py-4 font-semibold text-slate-900 w-[80px]">UX</th>
+                                <th className="px-6 py-4 font-semibold text-slate-900 w-[100px]">Group</th>
+                                <th className="px-6 py-4 font-semibold text-slate-900 w-[100px]">Tech Lead</th>
+                                <th className="px-6 py-4 font-semibold text-slate-900 w-[120px]">Developers</th>
+                                <th className="px-6 py-4 font-semibold text-slate-900 w-10"></th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {initiatives.map((init) => (
-                                <tr key={init.id} className="hover:bg-slate-50 transition-colors group">
-                                    <td className="px-6 py-4 font-medium text-slate-900">
-                                        <Link
-                                            to={`/plan/${encodeURIComponent(init.id)}`}
-                                            className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
-                                            title={init.name}
-                                        >
-                                            {init.name}
-                                        </Link>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <select
-                                            value={init.status}
-                                            onChange={(e) => handleFieldChange(init.id, 'status', e.target.value)}
-                                            className={`px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wide w-full text-center border-none focus:ring-2 focus:ring-blue-400 outline-none ${init.status === 'Initial Planning' || init.status === 'Release Planning' ? 'bg-blue-100 text-blue-800' :
-                                                init.status === 'Development' ? 'bg-amber-100 text-amber-800' :
-                                                    init.status === 'Released' ? 'bg-green-100 text-green-800' :
-                                                        'bg-slate-100 text-slate-600'
-                                                }`}
-                                        >
-                                            {STATUS_OPTIONS.map(opt => (
-                                                <option key={opt} value={opt}>{opt}</option>
-                                            ))}
-                                        </select>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <select
-                                            value={init.pm || ''}
-                                            onChange={(e) => handleFieldChange(init.id, 'pm', e.target.value)}
-                                            className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none w-full text-slate-600"
-                                        >
-                                            <option value="">Select PM</option>
-                                            {PM_OPTIONS.map(opt => (
-                                                <option key={opt} value={opt}>{opt}</option>
-                                            ))}
-                                        </select>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <select
-                                            value={init.ux || ''}
-                                            onChange={(e) => handleFieldChange(init.id, 'ux', e.target.value)}
-                                            className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none w-full text-slate-600"
-                                        >
-                                            <option value="">Select UX</option>
-                                            {UX_OPTIONS.map(opt => (
-                                                <option key={opt} value={opt}>{opt}</option>
-                                            ))}
-                                        </select>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <select
-                                            value={init.group || ''}
-                                            onChange={(e) => handleFieldChange(init.id, 'group', e.target.value)}
-                                            className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none w-full text-slate-600"
-                                        >
-                                            <option value="">Select Group</option>
-                                            {GROUP_OPTIONS.map(opt => (
-                                                <option key={opt} value={opt}>{opt}</option>
-                                            ))}
-                                        </select>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <input
-                                            value={init.techLead || ''}
-                                            onChange={(e) => handleFieldChange(init.id, 'techLead', e.target.value)}
-                                            className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none w-full text-slate-600"
-                                            placeholder="Lead"
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleDragEnd}
+                        >
+                            <SortableContext
+                                items={initiatives.map(i => i.id)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                <tbody className="divide-y divide-slate-100">
+                                    {initiatives.map((init) => (
+                                        <SortableInitiativeRow
+                                            key={init.id}
+                                            init={init}
+                                            handleFieldChange={handleFieldChange}
+                                            handleDeleteInitiative={handleDeleteInitiative}
+                                            STATUS_OPTIONS={STATUS_OPTIONS}
+                                            PM_OPTIONS={PM_OPTIONS}
+                                            UX_OPTIONS={UX_OPTIONS}
+                                            GROUP_OPTIONS={GROUP_OPTIONS}
                                         />
-                                    </td>
-                                    <td className="px-6 py-4 text-slate-500 text-xs">
-                                        <input
-                                            value={Array.isArray(init.developers) ? init.developers.join(', ') : init.developers || ''}
-                                            onChange={(e) => handleFieldChange(init.id, 'developers', e.target.value.split(',').map(d => d.trim()))}
-                                            className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none w-full text-slate-600 truncate"
-                                            placeholder="Devs..."
-                                        />
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
+                                    ))}
+                                </tbody>
+                            </SortableContext>
+                        </DndContext>
                     </table>
                 </div>
             </div>
@@ -221,6 +433,15 @@ const Dashboard = () => {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onSubmit={handleCreateInitiative}
+            />
+
+            <DeleteConfirmationModal
+                isOpen={deleteModal.isOpen}
+                onClose={() => setDeleteModal({ isOpen: false, item: null })}
+                onConfirm={confirmDelete}
+                title="Delete Initiative"
+                message="Are you sure you want to delete this initiative? All associated planning data, release plans, and epics will be permanently removed."
+                itemName={deleteModal.item?.name}
             />
         </div>
     );

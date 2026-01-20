@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Clock, Layers } from 'lucide-react';
 import PlanTracker from '../components/PlanTracker';
 import { ReleaseProvider, useReleaseData } from '../hooks/useReleaseData';
+
+import InitiativeLiveStatus from '../components/InitiativeLiveStatus';
 
 const PlanHeader = () => {
     const { data, isSyncing } = useReleaseData();
@@ -19,7 +21,12 @@ const PlanHeader = () => {
                         <div>
                             <div className="flex items-center gap-3">
                                 <h1 className="text-xl font-bold text-ss-navy">{meta.Name || 'Loading...'}</h1>
-                                <span className="px-2 py-0.5 rounded-full bg-blue-100 text-ss-primary text-xs font-bold uppercase tracking-wide">
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${meta.Status === 'Initial Planning' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                                    meta.Status === 'Release Planning' ? 'bg-purple-50 text-purple-600 border-purple-100' :
+                                        meta.Status === 'Development' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                            meta.Status === 'Released' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                'bg-slate-50 text-slate-600 border-slate-100'
+                                    }`}>
                                     {meta.Status || 'Draft'}
                                 </span>
                             </div>
@@ -49,41 +56,52 @@ const PlanHeader = () => {
 
 const PlanDetail = () => {
     const { id } = useParams();
-    const [activeView, setActiveView] = useState('initial_planning'); // 'initial_planning' or 'release_plans'
+    const [searchParams] = useSearchParams();
+    const initialView = searchParams.get('view') || 'initial_planning';
+    const [activeView, setActiveView] = useState(initialView);
+
+    // Update activeView if URL changes, though usually this component remounts or we might want to sync state back to URL (optional but good practice)
+    useEffect(() => {
+        const viewOverride = searchParams.get('view');
+        if (viewOverride && viewOverride !== activeView) {
+            setActiveView(viewOverride);
+        }
+    }, [searchParams]);
 
     return (
         <ReleaseProvider planId={decodeURIComponent(id)}>
             <div className="min-h-screen bg-slate-50 flex flex-col">
                 <PlanHeader />
 
-                {/* View Switcher Tabs */}
-                <div className="bg-white border-b border-slate-200 px-6">
-                    <div className="max-w-[1600px] mx-auto flex gap-4 py-4">
-                        <button
-                            onClick={() => setActiveView('initial_planning')}
-                            className={`flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-lg transition-all ${activeView === 'initial_planning'
-                                ? 'bg-ss-navy text-white shadow-md ring-1 ring-ss-navy'
-                                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:border-slate-300'
-                                } `}
-                        >
-                            <Clock className={`w-4 h-4 ${activeView === 'initial_planning' ? 'text-slate-400' : 'text-slate-400'}`} />
-                            Initial Planning
-                        </button>
-                        <button
-                            onClick={() => setActiveView('release_plans')}
-                            className={`flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-lg transition-all ${activeView === 'release_plans'
-                                ? 'bg-ss-navy text-white shadow-md ring-1 ring-ss-navy'
-                                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:border-slate-300'
-                                } `}
-                        >
-                            <Layers className={`w-4 h-4 ${activeView === 'release_plans' ? 'text-ss-primary' : 'text-slate-400'}`} />
-                            Release Plans
-                        </button>
-                    </div>
-                </div>
-
                 <div className="flex-1 overflow-auto">
                     <div className="max-w-[1600px] mx-auto p-6">
+                        {/* Live Status Section at the Top */}
+                        <InitiativeLiveStatus />
+
+                        {/* View Switcher Tabs under it */}
+                        <div className="bg-white rounded-xl border border-slate-200 p-1 flex gap-1 mb-6 inline-flex shadow-sm">
+                            <button
+                                onClick={() => setActiveView('initial_planning')}
+                                className={`flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-lg transition-all ${activeView === 'initial_planning'
+                                    ? 'bg-ss-navy text-white shadow-md'
+                                    : 'bg-transparent text-slate-600 hover:bg-slate-100'
+                                    } `}
+                            >
+                                <Clock className="w-4 h-4" />
+                                Initial Planning
+                            </button>
+                            <button
+                                onClick={() => setActiveView('release_plans')}
+                                className={`flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-lg transition-all ${activeView === 'release_plans'
+                                    ? 'bg-ss-navy text-white shadow-md'
+                                    : 'bg-transparent text-slate-600 hover:bg-slate-100'
+                                    } `}
+                            >
+                                <Layers className="w-4 h-4" />
+                                Release Plans
+                            </button>
+                        </div>
+
                         <PlanTracker activeView={activeView} />
                     </div>
                 </div>

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useReleaseData } from '../hooks/useReleaseData';
-import { Calendar, CheckCircle2, Clock, Link as LinkIcon, Figma, FileText, ChevronDown, ChevronRight, Plus, Layers, Target, Info } from 'lucide-react';
+import { Calendar, CheckCircle2, Clock, Link as LinkIcon, Figma, FileText, ChevronDown, ChevronRight, Plus, Layers, Target, Info, Trash2, ExternalLink } from 'lucide-react';
 import AddReleaseModal from './AddReleaseModal';
 import AddEpicModal from './AddEpicModal';
+import DeleteConfirmationModal from './DeleteConfirmationModal';
 
 const getStatusColor = (status) => {
     switch (status) {
@@ -276,6 +277,9 @@ const InitialPlanningView = ({ data, updateInitialPlanning }) => {
 
     return (
         <div className="space-y-6">
+            <PlanningGuidelines />
+            <ReleaseProcessGuidelines />
+
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
                     <Clock className="w-5 h-5 text-blue-600" />
@@ -370,16 +374,13 @@ const InitialPlanningView = ({ data, updateInitialPlanning }) => {
                     </div>
                 </div>
             </div>
-
-            <PlanningGuidelines />
-            <ReleaseProcessGuidelines />
         </div>
     );
 };
 
 // --- Sub-components for Release Plans View ---
 
-const EpicRow = ({ epic, planIndex, epicIndex, updateEpic }) => (
+const EpicRow = ({ epic, planIndex, epicIndex, updateEpic, deleteEpic }) => (
     <tr className="hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0 text-xs">
         <td className="px-3 py-2">
             <input
@@ -411,8 +412,9 @@ const EpicRow = ({ epic, planIndex, epicIndex, updateEpic }) => (
             <div className="flex items-center gap-1">
                 <input
                     value={epic.figma || ''}
+                    title={epic.figma || ''}
                     onChange={(e) => updateEpic(planIndex, epicIndex, 'figma', e.target.value)}
-                    className="bg-transparent border-b border-transparent focus:border-ss-primary focus:outline-none flex-1 text-ss-primary text-xs"
+                    className="bg-transparent border-b border-transparent focus:border-ss-primary focus:outline-none flex-1 text-ss-primary text-xs truncate"
                     placeholder="Link"
                 />
                 {epic.figma && (
@@ -426,6 +428,7 @@ const EpicRow = ({ epic, planIndex, epicIndex, updateEpic }) => (
             <div className="flex items-center gap-1">
                 <input
                     value={epic.Link || ''}
+                    title={epic.Link || ''}
                     onChange={(e) => updateEpic(planIndex, epicIndex, 'Link', e.target.value)}
                     placeholder="Link"
                     className="bg-transparent border-b border-transparent focus:border-ss-primary focus:outline-none flex-1 text-ss-primary text-xs truncate"
@@ -451,11 +454,26 @@ const EpicRow = ({ epic, planIndex, epicIndex, updateEpic }) => (
                 <option value="Done">Done</option>
             </select>
         </td>
+        <td className="px-3 py-2 text-right">
+            <button
+                type="button"
+                onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    deleteEpic(planIndex, epicIndex);
+                }}
+                className="p-1.5 text-slate-300 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50"
+                title="Delete Epic"
+            >
+                <Trash2 className="w-3.5 h-3.5" />
+            </button>
+        </td>
     </tr>
 );
 
-const ReleasePlanGroup = ({ plan, planIndex, updateReleasePlan, updateEpic, onAddEpic }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
+const ReleasePlanGroup = ({ plan, planIndex, updateReleasePlan, onDeleteReleasePlan, updateEpic, onDeleteEpic, onAddEpic }) => {
+    const [isExpanded, setIsExpanded] = useState(true);
+    const [showIframe, setShowIframe] = useState(true);
 
     return (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-8">
@@ -490,69 +508,222 @@ const ReleasePlanGroup = ({ plan, planIndex, updateReleasePlan, updateEpic, onAd
                                 <option value="Dev">Dev</option>
                                 <option value="Released">Released</option>
                             </select>
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    onDeleteReleasePlan(planIndex);
+                                }}
+                                className="p-2 text-slate-300 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50"
+                                title="Delete Release Plan"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
                         </div>
                     </div>
 
-                    {/* Header Bottom Row: Metrics Grid */}
+                    {/* Header Bottom Row: Metrics Grid & Dates */}
                     {isExpanded && (
-                        <div className="pl-9 grid grid-cols-2 md:grid-cols-4 gap-4" onClick={(e) => e.stopPropagation()}>
-                            <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm flex flex-col gap-1">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                                    <Clock className="w-3 h-3" /> LOE (Weeks)
-                                </label>
-                                <input
-                                    value={plan.loe}
-                                    onChange={(e) => updateReleasePlan(planIndex, 'loe', e.target.value)}
-                                    className="font-semibold text-slate-700 w-full outline-none text-sm placeholder:text-slate-300 placeholder:font-normal"
-                                    placeholder="e.g. 4"
-                                />
-                            </div>
-                            <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm flex flex-col gap-1">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                                    <Layers className="w-3 h-3" /> Developers
-                                </label>
-                                <input
-                                    value={plan.devs}
-                                    onChange={(e) => updateReleasePlan(planIndex, 'devs', e.target.value)}
-                                    className="font-semibold text-slate-700 w-full outline-none text-sm placeholder:text-slate-300 placeholder:font-normal"
-                                    placeholder="e.g. 3"
-                                />
-                            </div>
-                            <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm flex flex-col gap-1">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                                    <CheckCircle2 className="w-3 h-3" /> KPI / Goal
-                                </label>
-                                <input
-                                    value={plan.kpi}
-                                    onChange={(e) => updateReleasePlan(planIndex, 'kpi', e.target.value)}
-                                    className="font-semibold text-slate-700 w-full outline-none text-sm placeholder:text-slate-300 placeholder:font-normal"
-                                    placeholder="e.g. +10% Conv."
-                                />
-                            </div>
-                            <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm flex flex-col gap-1">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                                    <FileText className="w-3 h-3" /> Requirements
-                                </label>
-                                <div className="flex items-center gap-2">
+                        <div className="pl-9 space-y-4" onClick={(e) => e.stopPropagation()}>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm flex flex-col gap-1">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                        <Clock className="w-3 h-3" /> LOE (Weeks)
+                                    </label>
                                     <input
-                                        value={plan.reqDoc}
-                                        onChange={(e) => updateReleasePlan(planIndex, 'reqDoc', e.target.value)}
-                                        className="font-semibold text-blue-600 w-full outline-none text-sm placeholder:text-slate-300 placeholder:font-normal truncate"
-                                        placeholder="Paste Link..."
+                                        value={plan.loe}
+                                        onChange={(e) => updateReleasePlan(planIndex, 'loe', e.target.value)}
+                                        className="font-semibold text-slate-700 w-full outline-none text-sm placeholder:text-slate-300 placeholder:font-normal"
+                                        placeholder="e.g. 4"
                                     />
-                                    {plan.reqDoc && (
-                                        <a href={plan.reqDoc} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-blue-600">
-                                            <LinkIcon className="w-3 h-3" />
-                                        </a>
-                                    )}
                                 </div>
+                                <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm flex flex-col gap-1">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                        <Layers className="w-3 h-3" /> Developers
+                                    </label>
+                                    <input
+                                        value={plan.devs}
+                                        onChange={(e) => updateReleasePlan(planIndex, 'devs', e.target.value)}
+                                        className="font-semibold text-slate-700 w-full outline-none text-sm placeholder:text-slate-300 placeholder:font-normal"
+                                        placeholder="e.g. 3"
+                                    />
+                                </div>
+                                <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm flex flex-col gap-1">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                        <ExternalLink className="w-3 h-3" /> Dev Plan
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            value={plan.devPlan}
+                                            onChange={(e) => {
+                                                let val = e.target.value;
+                                                // If they paste an iframe tag, extract the src
+                                                if (val.includes('<iframe') && val.includes('src=')) {
+                                                    const match = val.match(/src=['"]([^'"]+)['"]/);
+                                                    if (match && match[1]) val = match[1];
+                                                }
+                                                updateReleasePlan(planIndex, 'devPlan', val);
+                                            }}
+                                            className="font-semibold text-blue-600 w-full outline-none text-sm placeholder:text-slate-300 placeholder:font-normal truncate"
+                                            placeholder="Paste Jira Plan Link..."
+                                        />
+                                        {plan.devPlan && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setShowIframe(!showIframe);
+                                                }}
+                                                className={`p-1 rounded transition-colors ${showIframe ? 'text-blue-600 bg-blue-50' : 'text-slate-400 hover:text-blue-600'}`}
+                                                title="Toggle Live Preview"
+                                            >
+                                                <Layers className="w-3.5 h-3.5" />
+                                            </button>
+                                        )}
+                                        {plan.devPlan && (
+                                            <a href={plan.devPlan} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-blue-600">
+                                                <LinkIcon className="w-3 h-3" />
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-sm flex flex-col gap-1">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                        <FileText className="w-3 h-3" /> Requirements
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            value={plan.reqDoc}
+                                            onChange={(e) => updateReleasePlan(planIndex, 'reqDoc', e.target.value)}
+                                            className="font-semibold text-blue-600 w-full outline-none text-sm placeholder:text-slate-300 placeholder:font-normal truncate"
+                                            placeholder="Paste Link..."
+                                        />
+                                        {plan.reqDoc && (
+                                            <a href={plan.reqDoc} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-blue-600">
+                                                <LinkIcon className="w-3 h-3" />
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="bg-blue-50/30 p-3 rounded-lg border border-blue-100 flex flex-col gap-2">
+                                    <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1.5">
+                                        <Calendar className="w-3 h-3" /> Release Planning Phase
+                                    </label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase">Start</span>
+                                            <input
+                                                type="date"
+                                                value={plan.planningStartDate || ''}
+                                                onChange={(e) => updateReleasePlan(planIndex, 'planningStartDate', e.target.value)}
+                                                className="bg-white border border-slate-200 rounded px-2 py-1 text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 transition-all"
+                                            />
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase">End</span>
+                                            <input
+                                                type="date"
+                                                value={plan.planningEndDate || ''}
+                                                onChange={(e) => updateReleasePlan(planIndex, 'planningEndDate', e.target.value)}
+                                                className="bg-white border border-slate-200 rounded px-2 py-1 text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 transition-all"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-emerald-50/30 p-3 rounded-lg border border-emerald-100 flex flex-col gap-2">
+                                    <label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-1.5">
+                                        <Calendar className="w-3 h-3" /> Release Development Phase
+                                    </label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase">Start</span>
+                                            <input
+                                                type="date"
+                                                value={plan.devStartDate || ''}
+                                                onChange={(e) => updateReleasePlan(planIndex, 'devStartDate', e.target.value)}
+                                                className="bg-white border border-slate-200 rounded px-2 py-1 text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-100 transition-all"
+                                            />
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase">End</span>
+                                            <input
+                                                type="date"
+                                                value={plan.devEndDate || ''}
+                                                onChange={(e) => updateReleasePlan(planIndex, 'devEndDate', e.target.value)}
+                                                className="bg-white border border-slate-200 rounded px-2 py-1 text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-100 transition-all"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {isExpanded && showIframe && plan.devPlan && (
+                        <div className="mx-6 mb-6 mt-2 rounded-xl border border-slate-200 overflow-hidden bg-slate-100 shadow-inner" onClick={(e) => e.stopPropagation()}>
+                            <div className="bg-white px-4 py-2 border-b border-slate-200 flex justify-between items-center">
+                                <span className="text-xs font-bold text-slate-500 flex items-center gap-2">
+                                    <Layers className="w-3 h-3 text-blue-600" />
+                                    Jira Live Timeline Preview
+                                </span>
+                                <button
+                                    onClick={() => setShowIframe(false)}
+                                    className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-100 rounded transition-colors"
+                                >
+                                    <Plus className="w-4 h-4 rotate-45" />
+                                </button>
+                            </div>
+                            <div className="relative w-full aspect-video min-h-[500px]">
+                                {!plan.devPlan.includes('PlanEmbeddedReport.jspa') ? (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-slate-50">
+                                        <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-4">
+                                            <Info className="w-8 h-8" />
+                                        </div>
+                                        <h4 className="text-lg font-bold text-slate-800 mb-2">Standard Link Detected</h4>
+                                        <p className="text-slate-600 max-w-md mb-6">
+                                            Atlassian security prevents standard Jira links from being embedded. To see the live timeline here, you must use the <strong>"Share {'->'} Embed"</strong> link from Jira.
+                                        </p>
+                                        <div className="bg-white p-4 rounded-lg border border-slate-200 text-left text-sm space-y-3 shadow-sm">
+                                            <p className="font-semibold text-slate-700">How to get the correct link:</p>
+                                            <ol className="list-decimal pl-5 space-y-1 text-slate-600">
+                                                <li>Open your Plan in Jira</li>
+                                                <li>Click the <strong>"Share"</strong> button (top right)</li>
+                                                <li>Select <strong>"Embed"</strong> or <strong>"Embedded report"</strong></li>
+                                                <li>Copy the <code>src</code> URL or the entire <code>{'<iframe>'}</code> tag and paste it here.</li>
+                                            </ol>
+                                        </div>
+                                        <a
+                                            href={plan.devPlan}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="mt-6 text-blue-600 font-bold hover:underline flex items-center gap-2"
+                                        >
+                                            Open Plan in New Tab <LinkIcon className="w-4 h-4" />
+                                        </a>
+                                    </div>
+                                ) : (
+                                    <iframe
+                                        src={plan.devPlan}
+                                        width="100%"
+                                        height="100%"
+                                        className="absolute inset-0"
+                                        style={{ border: 'none' }}
+                                        title="Jira Plan"
+                                        loading="lazy"
+                                    ></iframe>
+                                )}
                             </div>
                         </div>
                     )}
                 </div>
             </div>
 
-            {isExpanded && (
+            {/* Hiding Epics section as per request - Keeping code but not rendering */}
+            {false && isExpanded && (
                 <div className="border-t border-slate-200">
                     {(!plan.Epics || plan.Epics.length === 0) ? (
                         <div className="flex flex-col items-center justify-center py-10 text-center">
@@ -579,11 +750,12 @@ const ReleasePlanGroup = ({ plan, planIndex, updateReleasePlan, updateEpic, onAd
                                         <th className="px-3 py-2 w-[15%]">Figma</th>
                                         <th className="px-3 py-2 w-[15%]">Jira</th>
                                         <th className="px-3 py-2 w-[15%]">Status</th>
+                                        <th className="px-3 py-2 w-10"></th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {plan.Epics.map((epic, idx) => (
-                                        <EpicRow key={idx} epic={epic} planIndex={planIndex} epicIndex={idx} updateEpic={updateEpic} />
+                                        <EpicRow key={idx} epic={epic} planIndex={planIndex} epicIndex={idx} updateEpic={updateEpic} deleteEpic={onDeleteEpic} />
                                     ))}
                                 </tbody>
                             </table>
@@ -603,11 +775,12 @@ const ReleasePlanGroup = ({ plan, planIndex, updateReleasePlan, updateEpic, onAd
     );
 };
 
-const ReleasePlansView = ({ data, updateReleasePlan, addReleasePlan, updateEpic, addEpic }) => {
+const ReleasePlansView = ({ data, updateReleasePlan, addReleasePlan, deleteReleasePlan, updateEpic, addEpic, deleteEpic }) => {
     const releasePlans = data.Initiative?.ReleasePlan || [];
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isEpicModalOpen, setIsEpicModalOpen] = useState(false);
     const [activePlanIndex, setActivePlanIndex] = useState(null);
+    const [deleteModal, setDeleteModal] = useState({ isOpen: false, type: null, planIndex: null, epicIndex: null, itemName: '' });
 
     const handleAddEpicClick = (planIndex) => {
         setActivePlanIndex(planIndex);
@@ -617,6 +790,33 @@ const ReleasePlansView = ({ data, updateReleasePlan, addReleasePlan, updateEpic,
     const handleEpicSubmit = async (name) => {
         if (activePlanIndex !== null) {
             await addEpic(activePlanIndex, name);
+        }
+    };
+
+    const handleDeleteReleaseRequest = (idx, name) => {
+        setDeleteModal({
+            isOpen: true,
+            type: 'release',
+            planIndex: idx,
+            itemName: name
+        });
+    };
+
+    const handleDeleteEpicRequest = (pIdx, eIdx, name) => {
+        setDeleteModal({
+            isOpen: true,
+            type: 'epic',
+            planIndex: pIdx,
+            epicIndex: eIdx,
+            itemName: name
+        });
+    };
+
+    const handleConfirmDelete = () => {
+        if (deleteModal.type === 'release') {
+            deleteReleasePlan(deleteModal.planIndex);
+        } else if (deleteModal.type === 'epic') {
+            deleteEpic(deleteModal.planIndex, deleteModal.epicIndex);
         }
     };
 
@@ -656,7 +856,9 @@ const ReleasePlansView = ({ data, updateReleasePlan, addReleasePlan, updateEpic,
                             plan={plan}
                             planIndex={idx}
                             updateReleasePlan={updateReleasePlan}
+                            onDeleteReleasePlan={(i) => handleDeleteReleaseRequest(i, plan.goal)}
                             updateEpic={updateEpic}
+                            onDeleteEpic={(pi, ei) => handleDeleteEpicRequest(pi, ei, plan.Epics[ei]?.Name)}
                             onAddEpic={handleAddEpicClick}
                         />
                     ))
@@ -675,6 +877,17 @@ const ReleasePlansView = ({ data, updateReleasePlan, addReleasePlan, updateEpic,
                 onClose={() => setIsEpicModalOpen(false)}
                 onSubmit={handleEpicSubmit}
             />
+
+            <DeleteConfirmationModal
+                isOpen={deleteModal.isOpen}
+                onClose={() => setDeleteModal({ ...deleteModal, isOpen: false })}
+                onConfirm={handleConfirmDelete}
+                title={deleteModal.type === 'release' ? 'Delete Release Plan' : 'Delete Epic'}
+                message={deleteModal.type === 'release'
+                    ? 'Are you sure you want to delete this release plan? All associated epics and tracking data will be permanently removed.'
+                    : 'Are you sure you want to delete this epic?'}
+                itemName={deleteModal.itemName}
+            />
         </div >
     );
 };
@@ -682,7 +895,18 @@ const ReleasePlansView = ({ data, updateReleasePlan, addReleasePlan, updateEpic,
 // --- Main Tracker Component ---
 
 const PlanTracker = ({ activeView }) => {
-    const { data, isLoading, updatePlanningStep, updateInitialPlanning, updateReleasePlan, addReleasePlan, updateEpic, addEpic } = useReleaseData();
+    const {
+        data,
+        isLoading,
+        updatePlanningStep,
+        updateInitialPlanning,
+        updateReleasePlan,
+        addReleasePlan,
+        deleteReleasePlan,
+        updateEpic,
+        addEpic,
+        deleteEpic
+    } = useReleaseData();
 
     if (isLoading || !data) {
         return (
@@ -713,8 +937,10 @@ const PlanTracker = ({ activeView }) => {
                     updateStep={updatePlanningStep}
                     updateReleasePlan={updateReleasePlan}
                     addReleasePlan={addReleasePlan}
+                    deleteReleasePlan={deleteReleasePlan}
                     updateEpic={updateEpic}
                     addEpic={addEpic}
+                    deleteEpic={deleteEpic}
                 />
             )}
         </div>

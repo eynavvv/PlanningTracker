@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { sheetsService } from '../services/googleSheets.js';
+import { dataService } from '../services/dataService.js';
 
 const initialData = {
     Initiative: {
@@ -10,9 +10,13 @@ const initialData = {
         Group: "",
         TechLead: "",
         Developers: [],
+        internalReleaseDate: "",
+        externalReleaseDate: "",
+        detailedStatus: "",
+        deliverables: [],
         InitialPlanning: {
-            StartDate: "",
-            PlannedEndDate: "",
+            StartDate: new Date().toISOString().split('T')[0],
+            PlannedEndDate: new Date().toISOString().split('T')[0],
             Status: "",
             PRD: "",
             Figma: "",
@@ -52,42 +56,46 @@ export function ReleaseProvider({ children, planId }) {
             setIsLoading(true);
             setError(null);
 
-            if (!sheetsService.isConfigured()) {
+            if (!dataService.isConfigured()) {
                 setData(initialData);
                 setIsLoading(false);
                 return;
             }
 
             try {
-                const sheetData = await sheetsService.getRelease(planId);
-                const allReleases = await sheetsService.getAllReleases();
-                const initiativeMeta = allReleases.find(r => r.name === planId);
-                releaseMetadataRef.current = initiativeMeta;
-
+                const sheetData = await dataService.getRelease(planId);
                 const loadedData = {
                     Initiative: {
-                        Name: planId,
-                        Status: initiativeMeta?.status || "",
-                        PM: initiativeMeta?.pm || "",
-                        UX: initiativeMeta?.ux || "",
-                        Group: initiativeMeta?.group || "",
-                        TechLead: initiativeMeta?.techLead || "",
-                        Developers: initiativeMeta?.developers || [],
+                        id: planId,
+                        Name: sheetData.Initiative.name,
+                        Status: sheetData.Initiative.status || "",
+                        PM: sheetData.Initiative.pm || "",
+                        UX: sheetData.Initiative.ux || "",
+                        Group: sheetData.Initiative.group || "",
+                        TechLead: sheetData.Initiative.techLead || "",
+                        Developers: sheetData.Initiative.developers || [],
+                        internalReleaseDate: sheetData.Initiative.internalReleaseDate || "",
+                        externalReleaseDate: sheetData.Initiative.externalReleaseDate || "",
+                        detailedStatus: sheetData.Initiative.detailedStatus || "",
+                        deliverables: [], // Will load separately for better handling
                         InitialPlanning: sheetData.Initiative.InitialPlanning,
                         ReleasePlan: sheetData.Initiative.ReleasePlan
                     },
                     planningSteps: initialData.planningSteps
                 };
 
+                // Load deliverables
+                const deliverables = await dataService.getDeliverables(planId);
+                loadedData.Initiative.deliverables = deliverables;
+
                 setData(loadedData);
             } catch (err) {
-                console.error('Error loading from Google Sheets, using initial data:', err);
-                setData(initialData);
+                console.error('Error loading from database:', err);
+                setError('Could not find this initiative in the database.');
             }
         } catch (err) {
             console.error('Failed to load release data:', err);
             setError(err.message || 'Failed to load release data');
-            setData(initialData);
         } finally {
             setIsLoading(false);
         }
@@ -98,6 +106,19 @@ export function ReleaseProvider({ children, planId }) {
             ...prev,
             Initiative: { ...prev.Initiative, [field]: value }
         }));
+
+        if (syncTimeoutRef.current.meta) {
+            clearTimeout(syncTimeoutRef.current.meta);
+        }
+
+        syncTimeoutRef.current.meta = setTimeout(async () => {
+            try {
+                if (!dataService.isConfigured()) return;
+                await dataService.updateInitiative(planId, { [field]: value });
+            } catch (err) {
+                console.error('Failed to sync initiative metadata:', err);
+            }
+        }, 1000);
     };
 
     const updateInitialPlanning = useCallback((field, value) => {
@@ -118,8 +139,8 @@ export function ReleaseProvider({ children, planId }) {
 
         syncTimeoutRef.current.initialPlanning = setTimeout(async () => {
             try {
-                if (!sheetsService.isConfigured()) return;
-                await sheetsService.updateInitialPlanning(planId, { [field]: value });
+                if (!dataService.isConfigured()) return;
+                await dataService.updateInitialPlanning(planId, { [field]: value });
             } catch (err) {
                 console.error('Failed to sync initial planning:', err);
             }
@@ -127,82 +148,86 @@ export function ReleaseProvider({ children, planId }) {
     }, [planId]);
 
     const updateReleasePlan = useCallback((planIndex, field, value) => {
+        const plan = data.Initiative.ReleasePlan[planIndex];
+        if (!plan) return;
+
         setData(prev => ({
             ...prev,
             Initiative: {
                 ...prev.Initiative,
-                ReleasePlan: prev.Initiative.ReleasePlan.map((plan, idx) =>
-                    idx === planIndex ? { ...plan, [field]: value } : plan
+                ReleasePlan: prev.Initiative.ReleasePlan.map((p, idx) =>
+                    idx === planIndex ? { ...p, [field]: value } : p
                 )
             }
         }));
 
-        const key = `releasePlan_${planIndex}`;
+        const key = `releasePlan_${plan.id}`;
         if (syncTimeoutRef.current[key]) {
             clearTimeout(syncTimeoutRef.current[key]);
         }
 
         syncTimeoutRef.current[key] = setTimeout(async () => {
             try {
-                if (!sheetsService.isConfigured()) return;
-                await sheetsService.updateReleasePlan(planId, planIndex, { [field]: value });
+                if (!dataService.isConfigured()) return;
+                await dataService.updateReleasePlan(planId, plan.id, { [field]: value });
             } catch (err) {
                 console.error('Failed to sync release plan:', err);
             }
         }, 1000);
-    }, [planId]);
+    }, [planId, data.Initiative.ReleasePlan]);
 
     const updateEpic = useCallback((planIndex, epicIndex, field, value) => {
+        const plan = data.Initiative.ReleasePlan[planIndex];
+        const epic = plan?.Epics[epicIndex];
+        if (!epic) return;
+
         setData(prev => ({
             ...prev,
             Initiative: {
                 ...prev.Initiative,
-                ReleasePlan: prev.Initiative.ReleasePlan.map((plan, pIdx) =>
+                ReleasePlan: prev.Initiative.ReleasePlan.map((p, pIdx) =>
                     pIdx === planIndex ? {
-                        ...plan,
-                        Epics: plan.Epics.map((epic, eIdx) =>
-                            eIdx === epicIndex ? { ...epic, [field]: value } : epic
+                        ...p,
+                        Epics: p.Epics.map((e, eIdx) =>
+                            eIdx === epicIndex ? { ...e, [field]: value } : e
                         )
-                    } : plan
+                    } : p
                 )
             }
         }));
 
-        const key = `epic_${planIndex}_${epicIndex}`;
+        const key = `epic_${epic.id}`;
         if (syncTimeoutRef.current[key]) {
             clearTimeout(syncTimeoutRef.current[key]);
         }
 
         syncTimeoutRef.current[key] = setTimeout(async () => {
             try {
-                if (!sheetsService.isConfigured()) return;
-                let globalEpicIndex = 0;
-                for (let i = 0; i < planIndex; i++) {
-                    globalEpicIndex += data.Initiative.ReleasePlan[i].Epics.length;
-                }
-                globalEpicIndex += epicIndex;
-
-                await sheetsService.updateEpic(planId, globalEpicIndex, { [field]: value });
+                if (!dataService.isConfigured()) return;
+                await dataService.updateEpic(planId, epic.id, { [field]: value });
             } catch (err) {
                 console.error('Failed to sync epic:', err);
             }
         }, 1000);
-    }, [planId, data]);
+    }, [planId, data.Initiative.ReleasePlan]);
 
     const addReleasePlan = useCallback(async (name) => {
         const newIndex = data.Initiative.ReleasePlan.length;
         const newId = (newIndex + 1).toString();
 
+        const today = new Date().toISOString().split('T')[0];
         const newPlan = {
             id: newId,
             goal: name,
             status: 'Planning',
-            startDate: '',
-            endDate: '',
+            planningStartDate: today,
+            planningEndDate: today,
+            devStartDate: today,
+            devEndDate: today,
             loe: '',
             reqDoc: '',
             devs: '',
-            kpi: '',
+            devPlan: '',
             Epics: []
         };
 
@@ -215,18 +240,25 @@ export function ReleaseProvider({ children, planId }) {
         }));
 
         try {
-            if (sheetsService.isConfigured()) {
-                await sheetsService.updateReleasePlan(planId, newIndex, {
-                    id: newId,
-                    goal: name,
-                    status: 'Planning'
-                });
+            if (dataService.isConfigured()) {
+                const dbPlan = await dataService.createReleasePlan(planId, name);
+
+                // Update local state with the real database ID
+                setData(prev => ({
+                    ...prev,
+                    Initiative: {
+                        ...prev.Initiative,
+                        ReleasePlan: prev.Initiative.ReleasePlan.map(p =>
+                            p.id === newId ? { ...p, id: dbPlan.id } : p
+                        )
+                    }
+                }));
             }
         } catch (err) {
             console.error('Failed to add release plan:', err);
-            // Revert or reload if needed, for now just log
+            // Optionally remove the optimistic plan on failure
         }
-    }, [data, planId]);
+    }, [data.Initiative.ReleasePlan, planId]);
 
     const addEpic = useCallback(async (planIndex, name) => {
         // Calculate global epic new index
@@ -262,17 +294,78 @@ export function ReleaseProvider({ children, planId }) {
         }));
 
         try {
-            if (sheetsService.isConfigured()) {
-                await sheetsService.updateEpic(planId, currentTotalEpics, {
-                    ReleaseId: targetReleaseId,
-                    Name: name,
-                    Status: 'Pending'
-                });
+            if (dataService.isConfigured()) {
+                const dbEpic = await dataService.createEpic(planId, targetReleaseId, name);
+
+                // Update local state with the real database ID
+                setData(prev => ({
+                    ...prev,
+                    Initiative: {
+                        ...prev.Initiative,
+                        ReleasePlan: prev.Initiative.ReleasePlan.map((plan, idx) =>
+                            idx === planIndex ? {
+                                ...plan,
+                                Epics: plan.Epics.map(e => e.id === newEpic.id ? { ...e, id: dbEpic.id } : e)
+                            } : plan
+                        )
+                    }
+                }));
             }
         } catch (err) {
             console.error('Failed to add epic:', err);
+            // Optionally remove optimistic epic on failure
         }
-    }, [data, planId]);
+    }, [data.Initiative.ReleasePlan, planId]);
+
+    const deleteReleasePlan = useCallback(async (planIndex) => {
+        const plan = data.Initiative.ReleasePlan[planIndex];
+        if (!plan) return;
+
+        setData(prev => ({
+            ...prev,
+            Initiative: {
+                ...prev.Initiative,
+                ReleasePlan: prev.Initiative.ReleasePlan.filter((_, idx) => idx !== planIndex)
+            }
+        }));
+
+        try {
+            if (dataService.isConfigured()) {
+                await dataService.deleteReleasePlan(planId, plan.id);
+            }
+        } catch (err) {
+            console.error('Failed to delete release plan:', err);
+            loadReleaseData();
+        }
+    }, [planId, data.Initiative.ReleasePlan]);
+
+    const deleteEpic = useCallback(async (planIndex, epicIndex) => {
+        const plan = data.Initiative.ReleasePlan[planIndex];
+        const epic = plan?.Epics[epicIndex];
+        if (!epic) return;
+
+        setData(prev => ({
+            ...prev,
+            Initiative: {
+                ...prev.Initiative,
+                ReleasePlan: prev.Initiative.ReleasePlan.map((p, pIdx) =>
+                    pIdx === planIndex ? {
+                        ...p,
+                        Epics: p.Epics.filter((_, eIdx) => eIdx !== epicIndex)
+                    } : p
+                )
+            }
+        }));
+
+        try {
+            if (dataService.isConfigured()) {
+                await dataService.deleteEpic(planId, epic.id);
+            }
+        } catch (err) {
+            console.error('Failed to delete epic:', err);
+            loadReleaseData();
+        }
+    }, [planId, data.Initiative.ReleasePlan]);
 
     const updatePlanningStep = (id, updates) => {
         setData(prev => ({
@@ -281,6 +374,79 @@ export function ReleaseProvider({ children, planId }) {
                 step.id === id ? { ...step, ...updates } : step
             )
         }));
+    };
+
+    const addDeliverable = async (deliverable) => {
+        try {
+            const tempId = `temp-${Date.now()}`;
+            const newDeliverable = { ...deliverable, id: tempId };
+
+            setData(prev => ({
+                ...prev,
+                Initiative: {
+                    ...prev.Initiative,
+                    deliverables: [...prev.Initiative.deliverables, newDeliverable]
+                }
+            }));
+
+            if (dataService.isConfigured()) {
+                const dbDeliverable = await dataService.createDeliverable(planId, deliverable);
+                setData(prev => ({
+                    ...prev,
+                    Initiative: {
+                        ...prev.Initiative,
+                        deliverables: prev.Initiative.deliverables.map(d =>
+                            d.id === tempId ? { ...d, id: dbDeliverable.id } : d
+                        )
+                    }
+                }));
+            }
+        } catch (err) {
+            console.error('Failed to add deliverable:', err);
+        }
+    };
+
+    const updateDeliverable = async (id, updates) => {
+        setData(prev => ({
+            ...prev,
+            Initiative: {
+                ...prev.Initiative,
+                deliverables: prev.Initiative.deliverables.map(d =>
+                    d.id === id ? { ...d, ...updates } : d
+                )
+            }
+        }));
+
+        if (syncTimeoutRef.current[`deliverable_${id}`]) {
+            clearTimeout(syncTimeoutRef.current[`deliverable_${id}`]);
+        }
+
+        syncTimeoutRef.current[`deliverable_${id}`] = setTimeout(async () => {
+            try {
+                if (!dataService.isConfigured()) return;
+                await dataService.updateDeliverable(id, updates);
+            } catch (err) {
+                console.error('Failed to sync deliverable:', err);
+            }
+        }, 1000);
+    };
+
+    const deleteDeliverable = async (id) => {
+        setData(prev => ({
+            ...prev,
+            Initiative: {
+                ...prev.Initiative,
+                deliverables: prev.Initiative.deliverables.filter(d => d.id !== id)
+            }
+        }));
+
+        try {
+            if (dataService.isConfigured()) {
+                await dataService.deleteDeliverable(id);
+            }
+        } catch (err) {
+            console.error('Failed to delete deliverable:', err);
+        }
     };
 
     const value = {
@@ -292,9 +458,14 @@ export function ReleaseProvider({ children, planId }) {
         updateInitialPlanning,
         updateReleasePlan,
         addReleasePlan,
+        deleteReleasePlan,
         addEpic,
         updateEpic,
+        deleteEpic,
         updatePlanningStep,
+        addDeliverable,
+        updateDeliverable,
+        deleteDeliverable,
         refresh: loadReleaseData
     };
 
