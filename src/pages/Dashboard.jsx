@@ -84,7 +84,8 @@ const SortableInitiativeRow = ({
                                     e.stopPropagation();
                                     setIsExpanded(!isExpanded);
                                 }}
-                                className="p-1 bg-white border border-slate-200 shadow-sm rounded-md text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-all flex items-center justify-center translate-y-px"
+                                className="w-5 h-5 min-w-[20px] min-h-[20px] bg-white border border-slate-300 shadow-sm rounded-full text-slate-500 hover:text-blue-600 hover:border-blue-500 transition-all flex items-center justify-center flex-shrink-0"
+                                style={{ aspectRatio: '1/1', padding: '0' }}
                                 title={isExpanded ? "Collapse" : "Expand Releases"}
                             >
                                 {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}

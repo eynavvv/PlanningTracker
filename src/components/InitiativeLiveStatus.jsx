@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useReleaseData } from '../hooks/useReleaseData';
-import { Calendar, Clock, Plus, Trash2, Target, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Calendar, Clock, Plus, Trash2, Target, AlertCircle, ChevronDown, ChevronUp, Check } from 'lucide-react';
 
 const InitiativeLiveStatus = () => {
     const { data, updateInitiativeMeta, addDeliverable, updateDeliverable, deleteDeliverable } = useReleaseData();
@@ -152,6 +152,7 @@ const InitiativeLiveStatus = () => {
                             <div className="flex flex-col gap-3">
                                 {/* Headers */}
                                 <div className="flex items-center gap-4 px-4 text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
+                                    <div className="w-8"></div>
                                     <div className="flex-1">TASK / DELIVERABLE</div>
                                     <div className="w-36 text-center">DUE DATE</div>
                                     <div className="w-10 text-center">DEL</div>
@@ -164,12 +165,23 @@ const InitiativeLiveStatus = () => {
                                         if (!b.date) return -1;
                                         return new Date(a.date) - new Date(b.date);
                                     }).map((del) => (
-                                        <div key={del.id} className="group bg-white border-2 border-slate-900 p-3 rounded-2xl flex items-center gap-4 hover:border-ss-primary transition-all">
+                                        <div key={del.id} className={`group bg-white border border-slate-100 p-2.5 rounded-xl flex items-center gap-3 hover:border-blue-200 hover:shadow-sm transition-all ${del.status === 'done' ? 'bg-slate-50/50' : ''}`}>
+                                            <button
+                                                onClick={() => updateDeliverable(del.id, { status: del.status === 'done' ? 'pending' : 'done' })}
+                                                className={`w-7 h-7 max-w-[28px] max-h-[28px] rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${del.status === 'done'
+                                                    ? 'bg-emerald-500 border-emerald-500 text-white'
+                                                    : 'bg-white border-slate-400 text-transparent hover:border-slate-500'
+                                                    }`}
+                                                style={{ aspectRatio: '1/1', padding: '0' }}
+                                            >
+                                                <Check className={`w-4 h-4 stroke-[3px]`} />
+                                            </button>
+
                                             <div className="flex-1">
                                                 <input
                                                     value={del.name}
                                                     onChange={(e) => updateDeliverable(del.id, { name: e.target.value })}
-                                                    className="w-full bg-transparent border-none p-0 text-sm font-black text-ss-navy focus:ring-0 outline-none"
+                                                    className={`w-full bg-transparent border-none p-0 text-sm font-black focus:ring-0 outline-none ${del.status === 'done' ? 'text-slate-400 line-through italic' : 'text-ss-navy'}`}
                                                     placeholder="Deliverable name..."
                                                 />
                                             </div>
