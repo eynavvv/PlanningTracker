@@ -19,9 +19,12 @@ const ProtectedRoute = ({ children }) => {
 
     // Check allowed emails
     const allowedEmailsStr = import.meta.env.VITE_ALLOWED_EMAILS || '';
-    const allowedEmails = allowedEmailsStr.split(',').map(e => e.trim());
+    const allowedEmails = allowedEmailsStr
+        .split(',')
+        .map(e => e.trim().toLowerCase())
+        .filter(email => email.length > 0);
 
-    if (allowedEmails.length > 0 && !allowedEmails.includes(user.email)) {
+    if (allowedEmails.length > 0 && user?.email && !allowedEmails.includes(user.email.toLowerCase())) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="max-w-md w-full p-8 bg-white rounded-xl shadow-lg border border-red-100 text-center">
@@ -40,6 +43,13 @@ const ProtectedRoute = ({ children }) => {
                     >
                         Sign Out
                     </button>
+                </div>
+                {/* Debug Info */}
+                <div className="mt-8 p-4 bg-gray-100 rounded text-left text-xs font-mono text-gray-500 overflow-auto max-w-md w-full">
+                    <p><strong>Debug Info:</strong></p>
+                    <p>Current User Email: "{user?.email}"</p>
+                    <p>Allowed Emails: {JSON.stringify(allowedEmails)}</p>
+                    <p>Match Check: {allowedEmails.includes(user?.email?.toLowerCase()) ? 'Yes' : 'No'}</p>
                 </div>
             </div>
         );
