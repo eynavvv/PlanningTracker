@@ -56,7 +56,7 @@ class DataService {
 
             if (initError) throw initError;
 
-            // Fetch all initial planning entries
+            // Fetch all initiative planning entries
             const { data: initialPlanning, error: ipError } = await supabase
                 .from('initial_planning')
                 .select('initiative_id, start_date, planned_end_date');
@@ -80,6 +80,7 @@ class DataService {
                 group: init.group || '',
                 techLead: init.tech_lead || '',
                 developers: init.developers || [],
+                detailedStatus: init.detailed_status || '',
                 initialPlanning: initialPlanning.find(ip => ip.initiative_id === init.id),
                 releasePlans: releasePlans.filter(rp => rp.initiative_id === init.id)
             }));
@@ -103,7 +104,7 @@ class DataService {
 
             if (initError) throw initError;
 
-            // Get initial planning data
+            // Get initiative planning data
             const { data: ipData, error: ipError } = await supabase
                 .from('initial_planning')
                 .select('*')
@@ -248,7 +249,7 @@ class DataService {
             // First create the initiative
             const { data, error } = await supabase
                 .from('initiatives')
-                .insert([{ name, status: 'Initial Planning' }])
+                .insert([{ name, status: 'Initiative Planning' }])
                 .select()
                 .single();
 
@@ -258,7 +259,7 @@ class DataService {
             const startDate = format(today, 'yyyy-MM-dd');
             const endDate = format(addWeeks(today, 6), 'yyyy-MM-dd');
 
-            // Then create an empty initial planning entry for it
+            // Then create an empty initiative planning entry for it
             await supabase
                 .from('initial_planning')
                 .insert([{
@@ -340,7 +341,7 @@ class DataService {
     }
 
     /**
-     * Update Initial Planning data
+     * Update Initiative Planning data
      */
     async updateInitialPlanning(initiativeId, updates) {
         try {
@@ -360,7 +361,7 @@ class DataService {
             if (error) throw error;
             return { success: true };
         } catch (error) {
-            console.error('Error updating initial planning:', error);
+            console.error('Error updating initiative planning:', error);
             throw error;
         }
     }

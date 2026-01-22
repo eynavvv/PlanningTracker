@@ -52,16 +52,16 @@ const InitiativeLiveStatus = () => {
                         <div>
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5 px-1 underline decoration-slate-200 underline-offset-4">Overall Status</label>
                             <select
-                                value={initiative.Status || 'Initial Planning'}
+                                value={initiative.Status || 'Initiative Planning'}
                                 onChange={(e) => updateInitiativeMeta('Status', e.target.value)}
-                                className={`w-full p-2.5 rounded-xl border-2 font-black text-sm transition-all focus:ring-4 focus:ring-ss-primary/10 outline-none ${initiative.Status === 'Initial Planning' ? 'bg-blue-50 text-blue-700 border-blue-300' :
+                                className={`w-full p-2.5 rounded-xl border-2 font-black text-sm transition-all focus:ring-4 focus:ring-ss-primary/10 outline-none ${initiative.Status === 'Initiative Planning' ? 'bg-blue-50 text-blue-700 border-blue-300' :
                                     initiative.Status === 'Release Planning' ? 'bg-purple-50 text-purple-700 border-purple-300' :
                                         initiative.Status === 'Development' ? 'bg-amber-50 text-amber-700 border-amber-300' :
                                             initiative.Status === 'Released' ? 'bg-green-50 text-green-700 border-green-300' :
                                                 'bg-slate-50 text-slate-700 border-slate-300'
                                     }`}
                             >
-                                <option value="Initial Planning">Initial Planning</option>
+                                <option value="Initiative Planning">Initiative Planning</option>
                                 <option value="Release Planning">Release Planning</option>
                                 <option value="Development">Development</option>
                                 <option value="Released">Released</option>

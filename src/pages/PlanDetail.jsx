@@ -21,7 +21,7 @@ const PlanHeader = () => {
                         <div>
                             <div className="flex items-center gap-3">
                                 <h1 className="text-xl font-bold text-ss-navy">{meta.Name || 'Loading...'}</h1>
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${meta.Status === 'Initial Planning' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${meta.Status === 'Initiative Planning' ? 'bg-blue-50 text-blue-600 border-blue-100' :
                                     meta.Status === 'Release Planning' ? 'bg-purple-50 text-purple-600 border-purple-100' :
                                         meta.Status === 'Development' ? 'bg-amber-50 text-amber-600 border-amber-100' :
                                             meta.Status === 'Released' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
@@ -88,7 +88,7 @@ const PlanDetail = () => {
                                     } `}
                             >
                                 <Clock className="w-4 h-4" />
-                                Initial Planning
+                                Initiative Planning
                             </button>
                             <button
                                 onClick={() => setActiveView('release_plans')}

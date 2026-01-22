@@ -99,7 +99,7 @@ const ReleaseProcessGuidelines = () => {
             >
                 <span className="font-semibold text-slate-700 flex items-center gap-2">
                     <Info className="w-5 h-5 text-blue-600" />
-                    Initial Planning - Release Planning Guidelines
+                    Initiative Planning - Release Planning Guidelines
                 </span>
                 {isOpen ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronRight className="w-5 h-5 text-slate-400" />}
             </button>
@@ -204,7 +204,7 @@ const DetailedPlanningGuidelines = () => {
                     </table>
 
                     <div className="mt-4 text-xs text-slate-500 bg-slate-50 p-2 rounded border border-slate-200 italic">
-                        During this phase, items that require more time than expected (from Initial Planning) either consume the buffer or require hacks by R&D (and added to the technical debt bucket).
+                        During this phase, items that require more time than expected (from Initiative Planning) either consume the buffer or require hacks by R&D (and added to the technical debt bucket).
                     </div>
                 </div>
             )}
@@ -212,7 +212,7 @@ const DetailedPlanningGuidelines = () => {
     );
 };
 
-// --- Sub-components for Initial Planning View ---
+// --- Sub-components for Initiative Planning View ---
 
 const PlanningStepCard = ({ step, toggleStatus }) => {
 

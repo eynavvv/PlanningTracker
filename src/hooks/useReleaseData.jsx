@@ -138,7 +138,7 @@ export function ReleaseProvider({ children, planId }) {
                 if (!dataService.isConfigured()) return;
                 await dataService.updateInitialPlanning(planId, { [field]: value });
             } catch (err) {
-                console.error('Failed to sync initial planning:', err);
+                console.error('Failed to sync initiative planning:', err);
             }
         }, 1000);
     }, [planId]);

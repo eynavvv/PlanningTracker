@@ -31,17 +31,19 @@ const TimelineView = ({ data, onUpdateItem }) => {
         if (!data) return items;
 
         data.forEach(initiative => {
-            // 1. Initiative Initial Planning
+            // 1. Initiative Planning Phase
             if (initiative.initialPlanning?.start_date && initiative.initialPlanning?.planned_end_date) {
                 items.push({
                     id: `init-plan-${initiative.id}`,
                     name: initiative.name,
-                    phase: 'Initial Planning',
+                    phase: 'Initiative Planning',
                     startDate: new Date(initiative.initialPlanning.start_date),
                     endDate: new Date(initiative.initialPlanning.planned_end_date),
                     type: 'initiative-planning',
                     initiativeName: initiative.name,
-                    initiativeId: initiative.id
+                    initiativeId: initiative.id,
+                    detailedStatus: initiative.detailedStatus,
+                    overallStatus: initiative.status
                 });
             }
 
@@ -58,7 +60,9 @@ const TimelineView = ({ data, onUpdateItem }) => {
                         type: 'release-planning',
                         initiativeName: initiative.name,
                         initiativeId: initiative.id,
-                        releaseId: rp.id
+                        releaseId: rp.id,
+                        detailedStatus: initiative.detailedStatus,
+                        overallStatus: initiative.status
                     });
                 }
 
@@ -73,7 +77,9 @@ const TimelineView = ({ data, onUpdateItem }) => {
                         type: 'release-dev',
                         initiativeName: initiative.name,
                         initiativeId: initiative.id,
-                        releaseId: rp.id
+                        releaseId: rp.id,
+                        detailedStatus: initiative.detailedStatus,
+                        overallStatus: initiative.status
                     });
                 }
             });
@@ -278,7 +284,7 @@ const TimelineView = ({ data, onUpdateItem }) => {
                     className="p-4 overflow-x-auto custom-scrollbar bg-white"
                 >
                     <div
-                        className="relative pt-10 pb-6"
+                        className="relative pt-32 pb-6"
                         style={{ width: `${timelineWidth}px`, minWidth: '100%' }}
                     >
                         {/* Month Headers */}
@@ -354,15 +360,15 @@ const TimelineView = ({ data, onUpdateItem }) => {
                                     return startA - startB;
                                 });
 
-                                // Merge Initial Planning with First Release
+                                // Merge Initiative Planning with First Release
                                 if (sortedReleaseGroups.length > 0) {
-                                    // Row 0: Initial Planning + 1st Release
+                                    // Row 0: Initiative Planning + 1st Release
                                     subRows.push([...initItems, ...sortedReleaseGroups[0]]);
 
                                     // Subsequent Rows: Remaining Releases
                                     sortedReleaseGroups.slice(1).forEach(group => subRows.push(group));
                                 } else if (initItems.length > 0) {
-                                    // If no releases, just show Initial Planning
+                                    // If no releases, just show Initiative Planning
                                     subRows.push(initItems);
                                 }
 
@@ -421,28 +427,43 @@ const TimelineView = ({ data, onUpdateItem }) => {
                                                             />
 
                                                             {/* Tooltip */}
-                                                            <div className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-3 bg-ss-navy text-white rounded-lg shadow-xl z-50 w-64 pointer-events-none">
-                                                                <div className="text-xs font-bold mb-1 border-b border-blue-400/30 pb-1 text-center">{item.name}</div>
-                                                                <div className="grid grid-cols-2 gap-2 text-[10px]">
-                                                                    <div>
-                                                                        <div className="text-blue-300">Phase</div>
-                                                                        <div>{item.phase}</div>
+                                                            <div className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-3 bg-ss-navy text-white rounded-lg shadow-xl z-[100] w-72 pointer-events-none before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-8 before:border-transparent before:border-t-ss-navy">
+                                                                <div className="text-xs font-bold mb-2 border-b border-blue-400/30 pb-1 text-center truncate">{item.name}</div>
+                                                                <div className="flex flex-col gap-2 text-[10px]">
+                                                                    <div className="grid grid-cols-2 gap-2 border-b border-blue-400/10 pb-2">
+                                                                        <div>
+                                                                            <div className="text-blue-300 font-bold uppercase tracking-tighter opacity-70">Phase</div>
+                                                                            <div className="font-medium">{item.phase}</div>
+                                                                        </div>
+                                                                        <div>
+                                                                            <div className="text-blue-300 font-bold uppercase tracking-tighter opacity-70">Status</div>
+                                                                            <div className="font-medium truncate">{item.overallStatus || 'N/A'}</div>
+                                                                        </div>
                                                                     </div>
-                                                                    <div>
-                                                                        <div className="text-blue-300">Initiative</div>
-                                                                        <div className="truncate">{item.initiativeName}</div>
-                                                                    </div>
-                                                                    <div>
-                                                                        <div className="text-blue-300">Start</div>
-                                                                        <div>{format(currentStartDate, 'EEE, MMM d, yyyy')}</div>
-                                                                    </div>
-                                                                    <div>
-                                                                        <div className="text-blue-300">End</div>
-                                                                        <div>{format(currentEndDate, 'EEE, MMM d, yyyy')}</div>
+
+                                                                    <div className="grid grid-cols-2 gap-2">
+                                                                        <div>
+                                                                            <div className="text-blue-300 font-bold uppercase tracking-tighter opacity-70">Start Date</div>
+                                                                            <div className="font-medium whitespace-nowrap">{format(currentStartDate, 'MMM d, yyyy')}</div>
+                                                                        </div>
+                                                                        <div>
+                                                                            <div className="text-blue-300 font-bold uppercase tracking-tighter opacity-70">End Date</div>
+                                                                            <div className="font-medium whitespace-nowrap">{format(currentEndDate, 'MMM d, yyyy')}</div>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
-                                                                <div className="mt-2 pt-2 border-t border-blue-400/20 text-[8px] text-blue-300 uppercase tracking-widest font-black text-center">
-                                                                    DRAG CENTER TO MOVE • EDGES TO RESIZE
+
+                                                                {item.detailedStatus && (
+                                                                    <div className="mt-2 pt-2 border-t border-blue-400/20">
+                                                                        <div className="text-blue-300 text-[9px] uppercase tracking-widest font-black mb-1 opacity-80">Current Focus</div>
+                                                                        <div className="text-[10px] italic text-blue-50 leading-relaxed bg-blue-900/40 p-2 rounded-lg border border-blue-400/10">
+                                                                            "{item.detailedStatus}"
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
+                                                                <div className="mt-2 pt-2 border-t border-blue-400/20 text-[8px] text-blue-300 uppercase tracking-widest font-black text-center opacity-40">
+                                                                    DRAG TO MOVE • EDGES TO RESIZE
                                                                 </div>
                                                             </div>
                                                         </div>

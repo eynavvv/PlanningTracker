@@ -26,7 +26,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 // Dropdown options based on user schema
-const STATUS_OPTIONS = ['Initial Planning', 'Release Planning', 'Development', 'Released'];
+const STATUS_OPTIONS = ['Initiative Planning', 'Release Planning', 'Development', 'Released'];
 const PM_OPTIONS = ['Naama', 'Asaf', 'Sapir'];
 const UX_OPTIONS = ['Tal', 'Maya', 'Naor'];
 const GROUP_OPTIONS = ['Zebra', 'Pegasus'];
@@ -63,13 +63,13 @@ const SortableInitiativeRow = ({
             <tr
                 ref={setNodeRef}
                 style={style}
-                className={`hover:bg-slate-50 transition-colors group ${isDragging ? 'bg-white shadow-lg opacity-80' : ''}`}
+                className={`hover:bg-slate-50 transition-colors ${isDragging ? 'bg-white shadow-lg opacity-80' : ''}`}
             >
                 <td className="w-10 px-4">
                     <button
                         {...attributes}
                         {...listeners}
-                        className="p-1 text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing"
+                        className="p-1.5 rounded-lg bg-blue-50 text-blue-400 hover:bg-blue-100 hover:text-blue-600 cursor-grab active:cursor-grabbing transition-colors"
                         title="Drag to reorder"
                     >
                         <GripVertical className="w-4 h-4" />
@@ -91,20 +91,32 @@ const SortableInitiativeRow = ({
                                 {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                             </button>
                         )}
-                        <Link
-                            to={`/plan/${encodeURIComponent(init.id)}`}
-                            className="text-blue-600 hover:text-blue-800 hover:underline font-medium truncate"
-                            title={init.name}
-                        >
-                            {init.name}
-                        </Link>
+                        <div className="relative group w-fit max-w-full min-w-0">
+                            <Link
+                                to={`/plan/${encodeURIComponent(init.id)}`}
+                                className="text-blue-600 hover:text-blue-800 hover:underline font-medium truncate block"
+                            >
+                                {init.name}
+                            </Link>
+
+                            {/* Tooltip - show only if detailedStatus exists */}
+                            {init.detailedStatus && (
+                                <div className="invisible group-hover:visible absolute bottom-full left-0 mb-2 p-3 bg-ss-navy text-white rounded-lg shadow-xl z-[100] w-72 pointer-events-none before:content-[''] before:absolute before:top-full before:left-6 before:border-8 before:border-transparent before:border-t-ss-navy">
+                                    <div className="text-xs font-bold mb-2 border-b border-blue-400/30 pb-1 text-center truncate">{init.name}</div>
+                                    <div className="text-blue-300 text-[9px] uppercase tracking-widest font-black mb-1 opacity-80">Current Focus</div>
+                                    <div className="text-[10px] italic text-blue-50 leading-relaxed bg-blue-900/40 p-2 rounded-lg border border-blue-400/10">
+                                        "{init.detailedStatus}"
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </td>
                 <td className="px-6 py-4">
                     <select
                         value={init.status}
                         onChange={(e) => handleFieldChange(init.id, 'status', e.target.value)}
-                        className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider w-full text-center border-none focus:ring-2 focus:ring-blue-400 outline-none transition-all ${init.status === 'Initial Planning' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
+                        className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider w-full text-center border-none focus:ring-2 focus:ring-blue-400 outline-none transition-all ${init.status === 'Initiative Planning' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
                             init.status === 'Release Planning' ? 'bg-purple-50 text-purple-600 border border-purple-100' :
                                 init.status === 'Development' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
                                     init.status === 'Released' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
@@ -185,42 +197,44 @@ const SortableInitiativeRow = ({
                     </button>
                 </td>
             </tr>
-            {isExpanded && !isDragging && init.releasePlans?.map(rp => (
-                <tr key={rp.id} className="bg-blue-50/30 border-l-4 border-l-blue-400 transition-colors border-b border-slate-100/50">
-                    <td className="px-4"></td>
-                    <td className="px-6 py-3">
-                        <div className="flex items-center gap-2 pl-6">
-                            <Package className="w-3.5 h-3.5 text-blue-400" />
-                            <Link
-                                to={`/plan/${encodeURIComponent(init.id)}?view=release_plans#release-${rp.id}`}
-                                className="text-slate-600 font-medium text-xs hover:text-blue-600 hover:underline transition-colors truncate"
-                                title={rp.goal}
-                            >
-                                {rp.goal}
-                            </Link>
-                        </div>
-                    </td>
-                    <td className="px-6 py-3">
-                        <div className="flex justify-center">
-                            <select
-                                value={rp.status}
-                                onChange={(e) => handleReleasePhaseChange(init.id, rp.id, e.target.value)}
-                                className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border focus:ring-2 focus:ring-blue-400 outline-none transition-all ${rp.status === 'Planning' ? 'bg-purple-50 text-purple-600 border-purple-100' :
-                                    rp.status === 'Development' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                                        rp.status === 'Released' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                            'bg-slate-50 text-slate-600 border-slate-100'
-                                    }`}
-                            >
-                                {RELEASE_STATUS_OPTIONS.map(opt => (
-                                    <option key={opt} value={opt}>{opt}</option>
-                                ))}
-                            </select>
-                        </div>
-                    </td>
-                    <td colSpan={6} className="px-6 py-3"></td>
-                </tr>
-            ))}
-        </React.Fragment>
+            {
+                isExpanded && !isDragging && init.releasePlans?.map(rp => (
+                    <tr key={rp.id} className="bg-blue-50/30 border-l-4 border-l-blue-400 transition-colors border-b border-slate-100/50">
+                        <td className="px-4"></td>
+                        <td className="px-6 py-3">
+                            <div className="flex items-center gap-2 pl-6">
+                                <Package className="w-3.5 h-3.5 text-blue-400" />
+                                <Link
+                                    to={`/plan/${encodeURIComponent(init.id)}?view=release_plans#release-${rp.id}`}
+                                    className="text-slate-600 font-medium text-xs hover:text-blue-600 hover:underline transition-colors truncate"
+                                    title={rp.goal}
+                                >
+                                    {rp.goal}
+                                </Link>
+                            </div>
+                        </td>
+                        <td className="px-6 py-3">
+                            <div className="flex justify-center">
+                                <select
+                                    value={rp.status}
+                                    onChange={(e) => handleReleasePhaseChange(init.id, rp.id, e.target.value)}
+                                    className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border focus:ring-2 focus:ring-blue-400 outline-none transition-all ${rp.status === 'Planning' ? 'bg-purple-50 text-purple-600 border-purple-100' :
+                                        rp.status === 'Development' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                            rp.status === 'Released' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                'bg-slate-50 text-slate-600 border-slate-100'
+                                        }`}
+                                >
+                                    {RELEASE_STATUS_OPTIONS.map(opt => (
+                                        <option key={opt} value={opt}>{opt}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </td>
+                        <td colSpan={6} className="px-6 py-3"></td>
+                    </tr>
+                ))
+            }
+        </React.Fragment >
     );
 };
 
@@ -254,7 +268,7 @@ const Dashboard = () => {
 
             if (!dataService.isConfigured()) {
                 setInitiatives([
-                    { id: '1', name: 'Demo Initiative', status: 'Initial Planning', pm: 'Naama', ux: 'Tal', group: 'Zebra', techLead: 'John', developers: ['Alice', 'Bob'] },
+                    { id: '1', name: 'Demo Initiative', status: 'Initiative Planning', pm: 'Naama', ux: 'Tal', group: 'Zebra', techLead: 'John', developers: ['Alice', 'Bob'] },
                 ]);
                 setIsLoading(false);
                 return;
