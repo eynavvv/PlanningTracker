@@ -139,7 +139,8 @@ const TimelineView = ({ data, onUpdateItem }) => {
         weekMarkers.push({
             date: currentWeek,
             left: getPosition(currentWeek),
-            label: format(currentWeek, 'd')
+            label: format(currentWeek, 'MMM d'),
+            width: dayWidth * 7
         });
         currentWeek = addDays(currentWeek, 7);
     }
@@ -273,14 +274,25 @@ const TimelineView = ({ data, onUpdateItem }) => {
                             </div>
                         ))}
 
+                        {/* Week Alternating Backgrounds */}
+                        {weekMarkers.map((w, idx) => (
+                            idx % 2 === 0 && (
+                                <div
+                                    key={`week-bg-${idx}`}
+                                    className="absolute top-6 bottom-0 bg-slate-50 opacity-40 -z-10"
+                                    style={{ left: `${w.left}px`, width: `${w.width}px` }}
+                                />
+                            )
+                        ))}
+
                         {/* Week Markers */}
                         {weekMarkers.map((w, idx) => (
                             <div
                                 key={`week-${idx}`}
-                                className="absolute top-6 border-l border-slate-100 h-full opacity-50"
+                                className="absolute top-6 border-l border-slate-200 h-full z-0"
                                 style={{ left: `${w.left}px` }}
                             >
-                                <span className="absolute top-0 left-1 text-[9px] font-bold text-slate-400">
+                                <span className="absolute top-0 left-1 text-[8px] font-black text-slate-400 whitespace-nowrap bg-white/80 px-1 rounded">
                                     {w.label}
                                 </span>
                             </div>
@@ -289,10 +301,12 @@ const TimelineView = ({ data, onUpdateItem }) => {
                         {/* Today Line */}
                         {todayPos !== null && (
                             <div
-                                className="absolute top-0 bottom-0 border-l-2 border-blue-500 z-10 before:content-[''] before:absolute before:top-0 before:-left-1 before:w-2 before:h-2 before:bg-blue-500 before:rounded-full"
+                                className="absolute top-0 bottom-0 border-l-2 border-ss-action z-10 before:content-[''] before:absolute before:top-0 before:-left-1 before:w-2 before:h-2 before:bg-ss-action before:rounded-full"
                                 style={{ left: `${todayPos}px` }}
                                 title="Today"
-                            />
+                            >
+                                <span className="absolute top-1 -left-4 -translate-x-full text-[8px] font-black text-ss-action bg-white px-1 shadow-sm border border-ss-action/20">TODAY</span>
+                            </div>
                         )}
 
                         {/* Bars */}
