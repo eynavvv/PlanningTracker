@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { addWeeks, format } from 'date-fns';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -253,15 +254,17 @@ class DataService {
 
             if (error) throw error;
 
-            const today = new Date().toISOString().split('T')[0];
+            const today = new Date();
+            const startDate = format(today, 'yyyy-MM-dd');
+            const endDate = format(addWeeks(today, 6), 'yyyy-MM-dd');
 
             // Then create an empty initial planning entry for it
             await supabase
                 .from('initial_planning')
                 .insert([{
                     initiative_id: data.id,
-                    start_date: today,
-                    planned_end_date: today
+                    start_date: startDate,
+                    planned_end_date: endDate
                 }]);
 
             return { success: true, id: data.id };
@@ -306,17 +309,25 @@ class DataService {
      */
     async createReleasePlan(initiativeId, name) {
         try {
-            const today = new Date().toISOString().split('T')[0];
+            const today = new Date();
+            const planningStart = format(today, 'yyyy-MM-dd');
+            const planningEnd = format(addWeeks(today, 2), 'yyyy-MM-dd');
+            // Dev starts when planning ends (conceptually), or same day? Usually sequential.
+            // "2 weeks for planning, 6 weeks for dev". 
+            // Let's assume Dev starts after Planning.
+            const devStart = planningEnd;
+            const devEnd = format(addWeeks(today, 8), 'yyyy-MM-dd'); // 2 + 6 = 8 weeks total
+
             const { data, error } = await supabase
                 .from('release_plans')
                 .insert([{
                     initiative_id: initiativeId,
                     goal: name,
                     status: 'Planning',
-                    planning_start_date: today,
-                    planning_end_date: today,
-                    dev_start_date: today,
-                    dev_end_date: today,
+                    planning_start_date: planningStart,
+                    planning_end_date: planningEnd,
+                    dev_start_date: devStart,
+                    dev_end_date: devEnd,
                     order_index: 0 // You might want to calculate this
                 }])
                 .select()
