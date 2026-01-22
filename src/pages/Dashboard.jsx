@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Plus, Search, Trash2, GripVertical, ChevronRight, ChevronDown, Package } from 'lucide-react';
+import { Plus, Search, Trash2, GripVertical, ChevronRight, ChevronDown, Package, PartyPopper, Calendar } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import NewInitiativeModal from '../components/NewInitiativeModal';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
@@ -214,23 +214,44 @@ const SortableInitiativeRow = ({
                             </div>
                         </td>
                         <td className="px-6 py-3">
-                            <div className="flex justify-center">
-                                <select
-                                    value={rp.status}
-                                    onChange={(e) => handleReleasePhaseChange(init.id, rp.id, e.target.value)}
-                                    className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border focus:ring-2 focus:ring-blue-400 outline-none transition-all ${rp.status === 'Planning' ? 'bg-purple-50 text-purple-600 border-purple-100' :
-                                        rp.status === 'Development' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                                            rp.status === 'Released' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                                'bg-slate-50 text-slate-600 border-slate-100'
-                                        }`}
-                                >
-                                    {RELEASE_STATUS_OPTIONS.map(opt => (
-                                        <option key={opt} value={opt}>{opt}</option>
-                                    ))}
-                                </select>
+                            <select
+                                value={rp.status}
+                                onChange={(e) => handleReleasePhaseChange(init.id, rp.id, e.target.value)}
+                                className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider w-full text-center border focus:ring-2 focus:ring-blue-400 outline-none transition-all ${rp.status === 'Planning' ? 'bg-purple-50 text-purple-600 border-purple-100' :
+                                    rp.status === 'Development' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                        rp.status === 'Released' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                            'bg-slate-50 text-slate-600 border-slate-100'
+                                    }`}
+                            >
+                                {RELEASE_STATUS_OPTIONS.map(opt => (
+                                    <option key={opt} value={opt}>{opt}</option>
+                                ))}
+                            </select>
+                        </td>
+                        <td className="px-6 py-3" colSpan={6}>
+                            <div className="flex items-center gap-4 whitespace-nowrap">
+                                {rp.status === 'Planning' && rp.planning_end_date && (
+                                    <div className="flex items-center gap-1.5 text-[11px] text-purple-600 font-bold bg-purple-50/50 px-3 py-1.5 rounded-full border border-purple-100/50 uppercase tracking-tight">
+                                        <Calendar className="w-3.5 h-3.5" />
+                                        <span>Target: {format(new Date(rp.planning_end_date), 'MMM d, yyyy')}</span>
+                                    </div>
+                                )}
+
+                                {rp.status === 'Development' && rp.dev_end_date && (
+                                    <div className="flex items-center gap-1.5 text-[11px] text-amber-600 font-bold bg-amber-50/50 px-3 py-1.5 rounded-full border border-amber-100/50 uppercase tracking-tight">
+                                        <Calendar className="w-3.5 h-3.5" />
+                                        <span>Target: {format(new Date(rp.dev_end_date), 'MMM d, yyyy')}</span>
+                                    </div>
+                                )}
+
+                                {rp.status === 'Released' && (
+                                    <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 font-bold bg-emerald-50/50 px-3 py-1.5 rounded-full border border-emerald-100/50 uppercase tracking-tight animate-bounce">
+                                        <PartyPopper className="w-3.5 h-3.5" />
+                                        <span>Liftoff! 🎉</span>
+                                    </div>
+                                )}
                             </div>
                         </td>
-                        <td colSpan={6} className="px-6 py-3"></td>
                     </tr>
                 ))
             }
