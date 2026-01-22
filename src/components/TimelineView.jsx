@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import {
     format,
     addDays,
@@ -23,6 +23,7 @@ const TimelineView = ({ data, onUpdateItem }) => {
     const navigate = useNavigate();
     const [isExpanded, setIsExpanded] = useState(false);
     const [draggingItem, setDraggingItem] = useState(null); // { id, deltaDays, originalStartDate, originalEndDate }
+    const scrollContainerRef = useRef(null);
 
     // Process data into timeline items
     const timelineItems = useMemo(() => {
@@ -236,6 +237,22 @@ const TimelineView = ({ data, onUpdateItem }) => {
         }
     };
 
+    useEffect(() => {
+        if (isExpanded && scrollContainerRef.current && todayPos !== null) {
+            // Small delay to ensure the DOM has updated and is ready to scroll
+            const timer = setTimeout(() => {
+                const container = scrollContainerRef.current;
+                const containerWidth = container.offsetWidth;
+                const scrollLeft = todayPos - (containerWidth / 2);
+                container.scrollTo({
+                    left: Math.max(0, scrollLeft),
+                    behavior: 'smooth'
+                });
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [isExpanded, todayPos]);
+
     return (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6 transition-all duration-300">
             <button
@@ -256,7 +273,10 @@ const TimelineView = ({ data, onUpdateItem }) => {
             </button>
 
             {isExpanded && (
-                <div className="p-4 overflow-x-auto custom-scrollbar bg-white">
+                <div
+                    ref={scrollContainerRef}
+                    className="p-4 overflow-x-auto custom-scrollbar bg-white"
+                >
                     <div
                         className="relative pt-10 pb-6"
                         style={{ width: `${timelineWidth}px`, minWidth: '100%' }}
