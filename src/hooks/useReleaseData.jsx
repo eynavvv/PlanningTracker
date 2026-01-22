@@ -10,8 +10,6 @@ const initialData = {
         Group: "",
         TechLead: "",
         Developers: [],
-        internalReleaseDate: "",
-        externalReleaseDate: "",
         detailedStatus: "",
         deliverables: [],
         InitialPlanning: {
@@ -74,8 +72,6 @@ export function ReleaseProvider({ children, planId }) {
                         Group: sheetData.Initiative.group || "",
                         TechLead: sheetData.Initiative.techLead || "",
                         Developers: sheetData.Initiative.developers || [],
-                        internalReleaseDate: sheetData.Initiative.internalReleaseDate || "",
-                        externalReleaseDate: sheetData.Initiative.externalReleaseDate || "",
                         detailedStatus: sheetData.Initiative.detailedStatus || "",
                         deliverables: [], // Will load separately for better handling
                         InitialPlanning: sheetData.Initiative.InitialPlanning,
@@ -228,6 +224,8 @@ export function ReleaseProvider({ children, planId }) {
             reqDoc: '',
             devs: '',
             devPlan: '',
+            internalReleaseDate: '',
+            externalReleaseDate: '',
             Epics: []
         };
 

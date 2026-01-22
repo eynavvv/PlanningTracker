@@ -46,7 +46,7 @@ const InitiativeLiveStatus = () => {
             </button>
 
             {isExpanded && (
-                <div className="p-6 grid grid-cols-1 lg:grid-cols-[300px_1fr_240px] gap-8 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="p-6 grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-8 animate-in fade-in slide-in-from-top-2 duration-300">
                     {/* Column 1: Overall Status & Focus */}
                     <div className="flex flex-col gap-6">
                         <div>
@@ -90,7 +90,7 @@ const InitiativeLiveStatus = () => {
                         </div>
                     </div>
 
-                    {/* Column 2: Deliverables & Milestones (NOW IN THE MIDDLE) */}
+                    {/* Column 2: Deliverables & Milestones */}
                     <div className="flex flex-col gap-4 border-l border-slate-100 lg:pl-8">
                         <div className="flex justify-between items-center px-1 mb-1">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
@@ -196,40 +196,6 @@ const InitiativeLiveStatus = () => {
                                         </div>
                                     ))}
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Column 3: Target Dates (NOW ON THE RIGHT & SMALLER) */}
-                    <div className="flex flex-col gap-10 border-l border-slate-100 lg:pl-8">
-                        <div className="pt-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2 px-1 flex items-center gap-2">
-                                <Clock className="w-3.5 h-3.5 text-ss-primary" /> Internal Release
-                            </label>
-                            <div className="flex flex-col gap-2">
-                                <input
-                                    type="date"
-                                    size="sm"
-                                    value={initiative.internalReleaseDate || ''}
-                                    onChange={(e) => updateInitiativeMeta('internalReleaseDate', e.target.value)}
-                                    className="w-full p-2.5 rounded-xl border-2 border-slate-900 font-bold text-sm text-ss-navy focus:ring-4 focus:ring-ss-primary/10 outline-none transition-all shadow-sm"
-                                />
-                                <span className="text-[8px] font-black text-red-500 uppercase tracking-widest ml-1 bg-red-50 w-fit px-1.5 rounded">Target Ref</span>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2 px-1 flex items-center gap-2">
-                                <Calendar className="w-3.5 h-3.5 text-emerald-600" /> External Launch
-                            </label>
-                            <div className="flex flex-col gap-2">
-                                <input
-                                    type="date"
-                                    value={initiative.externalReleaseDate || ''}
-                                    onChange={(e) => updateInitiativeMeta('externalReleaseDate', e.target.value)}
-                                    className="w-full p-2.5 rounded-xl border-2 border-slate-900 font-bold text-sm text-ss-navy focus:ring-4 focus:ring-ss-primary/10 outline-none transition-all shadow-sm"
-                                />
-                                <span className="text-[8px] font-black text-red-500 uppercase tracking-widest ml-1 bg-red-50 w-fit px-1.5 rounded">PUBLIC Launch</span>
                             </div>
                         </div>
                     </div>

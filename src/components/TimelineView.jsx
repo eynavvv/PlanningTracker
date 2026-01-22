@@ -21,7 +21,7 @@ import { ChevronDown, ChevronUp, Calendar, Info, Clock, Layers } from 'lucide-re
 
 const TimelineView = ({ data, onUpdateItem }) => {
     const navigate = useNavigate();
-    const [isExpanded, setIsExpanded] = useState(true);
+    const [isExpanded, setIsExpanded] = useState(false);
     const [draggingItem, setDraggingItem] = useState(null); // { id, deltaDays, originalStartDate, originalEndDate }
 
     // Process data into timeline items

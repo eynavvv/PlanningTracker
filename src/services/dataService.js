@@ -150,6 +150,8 @@ class DataService {
                 reqDoc: plan.req_doc || '',
                 devs: plan.devs || '',
                 devPlan: plan.kpi || '',
+                internalReleaseDate: plan.internal_release_date || '',
+                externalReleaseDate: plan.external_release_date || '',
                 Epics: epics.filter(e => e.release_plan_id === plan.id).map(e => ({
                     id: e.id,
                     releaseId: e.release_plan_id,
@@ -196,8 +198,6 @@ class DataService {
                     group: initiative.group || '',
                     techLead: initiative.tech_lead || '',
                     developers: initiative.developers || [],
-                    internalReleaseDate: initiative.internal_release_date || '',
-                    externalReleaseDate: initiative.external_release_date || '',
                     detailedStatus: initiative.detailed_status || '',
                     InitialPlanning: initialPlanning,
                     ReleasePlan: releasePlans
@@ -287,8 +287,6 @@ class DataService {
             if ('status' in updates) dbUpdates.status = updates.status;
             if ('group' in updates) dbUpdates.group = updates.group;
             if ('developers' in updates) dbUpdates.developers = updates.developers;
-            if ('internalReleaseDate' in updates) dbUpdates.internal_release_date = updates.internalReleaseDate;
-            if ('externalReleaseDate' in updates) dbUpdates.external_release_date = updates.externalReleaseDate;
             if ('detailedStatus' in updates) dbUpdates.detailed_status = updates.detailedStatus;
 
             const { error } = await supabase
@@ -392,6 +390,14 @@ class DataService {
             if (dbUpdates.reqDoc) {
                 dbUpdates.req_doc = dbUpdates.reqDoc;
                 delete dbUpdates.reqDoc;
+            }
+            if (dbUpdates.internalReleaseDate) {
+                dbUpdates.internal_release_date = dbUpdates.internalReleaseDate;
+                delete dbUpdates.internalReleaseDate;
+            }
+            if (dbUpdates.externalReleaseDate) {
+                dbUpdates.external_release_date = dbUpdates.externalReleaseDate;
+                delete dbUpdates.externalReleaseDate;
             }
 
             if (dbUpdates.devPlan !== undefined) {

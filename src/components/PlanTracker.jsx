@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useReleaseData } from '../hooks/useReleaseData';
 import { Calendar, CheckCircle2, Clock, Link as LinkIcon, Figma, FileText, ChevronDown, ChevronRight, Plus, Layers, Target, Info, Trash2, ExternalLink } from 'lucide-react';
 import AddReleaseModal from './AddReleaseModal';
@@ -476,7 +476,7 @@ const ReleasePlanGroup = ({ plan, planIndex, updateReleasePlan, onDeleteReleaseP
     const [showIframe, setShowIframe] = useState(true);
 
     return (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-8">
+        <div id={`release-${plan.id}`} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-8 scroll-mt-24">
             <div className="bg-slate-50 border-b border-slate-100">
                 <div
                     className="px-6 py-4 flex flex-col gap-4 cursor-pointer hover:bg-slate-100/80 transition-colors"
@@ -607,7 +607,7 @@ const ReleasePlanGroup = ({ plan, planIndex, updateReleasePlan, onDeleteReleaseP
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="bg-blue-50/30 p-3 rounded-lg border border-blue-100 flex flex-col gap-2">
                                     <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1.5">
                                         <Calendar className="w-3 h-3" /> Release Planning Phase
@@ -655,6 +655,32 @@ const ReleasePlanGroup = ({ plan, planIndex, updateReleasePlan, onDeleteReleaseP
                                                 value={plan.devEndDate || ''}
                                                 onChange={(e) => updateReleasePlan(planIndex, 'devEndDate', e.target.value)}
                                                 className="bg-white border border-slate-200 rounded px-2 py-1 text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-100 transition-all"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-ss-navy/5 p-3 rounded-lg border border-ss-navy/10 flex flex-col gap-2">
+                                    <label className="text-[10px] font-black text-ss-navy uppercase tracking-widest flex items-center gap-1.5">
+                                        <Target className="w-3 h-3" /> Target Release Dates
+                                    </label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase">Internal</span>
+                                            <input
+                                                type="date"
+                                                value={plan.internalReleaseDate || ''}
+                                                onChange={(e) => updateReleasePlan(planIndex, 'internalReleaseDate', e.target.value)}
+                                                className="bg-white border border-slate-200 rounded px-2 py-1 text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-ss-navy/10 transition-all"
+                                            />
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase">External</span>
+                                            <input
+                                                type="date"
+                                                value={plan.externalReleaseDate || ''}
+                                                onChange={(e) => updateReleasePlan(planIndex, 'externalReleaseDate', e.target.value)}
+                                                className="bg-white border border-slate-200 rounded px-2 py-1 text-xs font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-ss-navy/10 transition-all"
                                             />
                                         </div>
                                     </div>
@@ -781,6 +807,19 @@ const ReleasePlansView = ({ data, updateReleasePlan, addReleasePlan, deleteRelea
     const [isEpicModalOpen, setIsEpicModalOpen] = useState(false);
     const [activePlanIndex, setActivePlanIndex] = useState(null);
     const [deleteModal, setDeleteModal] = useState({ isOpen: false, type: null, planIndex: null, epicIndex: null, itemName: '' });
+
+    useEffect(() => {
+        const hash = window.location.hash;
+        if (hash) {
+            const id = hash.replace('#', '');
+            const element = document.getElementById(id);
+            if (element) {
+                setTimeout(() => {
+                    element.scrollIntoView({ behavior: 'smooth' });
+                }, 500);
+            }
+        }
+    }, [releasePlans]);
 
     const handleAddEpicClick = (planIndex) => {
         setActivePlanIndex(planIndex);

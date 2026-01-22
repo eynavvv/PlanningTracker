@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Plus, Search, Trash2, GripVertical } from 'lucide-react';
+import { Plus, Search, Trash2, GripVertical, ChevronRight, ChevronDown, Package } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import NewInitiativeModal from '../components/NewInitiativeModal';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
@@ -30,16 +30,18 @@ const STATUS_OPTIONS = ['Initial Planning', 'Release Planning', 'Development', '
 const PM_OPTIONS = ['Naama', 'Asaf', 'Sapir'];
 const UX_OPTIONS = ['Tal', 'Maya', 'Naor'];
 const GROUP_OPTIONS = ['Zebra', 'Pegasus'];
+const RELEASE_STATUS_OPTIONS = ['Planning', 'Development', 'Released'];
 
 const SortableInitiativeRow = ({
     init,
     handleFieldChange,
-    handleDeleteInitiative,
+    handleReleasePhaseChange,
     STATUS_OPTIONS,
     PM_OPTIONS,
     UX_OPTIONS,
     GROUP_OPTIONS
 }) => {
+    const [isExpanded, setIsExpanded] = React.useState(false);
     const {
         attributes,
         listeners,
@@ -57,115 +59,167 @@ const SortableInitiativeRow = ({
     };
 
     return (
-        <tr
-            ref={setNodeRef}
-            style={style}
-            className={`hover:bg-slate-50 transition-colors group ${isDragging ? 'bg-white shadow-lg opacity-80' : ''}`}
-        >
-            <td className="w-10 px-4">
-                <button
-                    {...attributes}
-                    {...listeners}
-                    className="p-1 text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing"
-                    title="Drag to reorder"
-                >
-                    <GripVertical className="w-4 h-4" />
-                </button>
-            </td>
-            <td className="px-6 py-4 font-medium text-slate-900">
-                <Link
-                    to={`/plan/${encodeURIComponent(init.id)}`}
-                    className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
-                    title={init.name}
-                >
-                    {init.name}
-                </Link>
-            </td>
-            <td className="px-6 py-4">
-                <select
-                    value={init.status}
-                    onChange={(e) => handleFieldChange(init.id, 'status', e.target.value)}
-                    className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider w-full text-center border-none focus:ring-2 focus:ring-blue-400 outline-none transition-all ${init.status === 'Initial Planning' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
-                        init.status === 'Release Planning' ? 'bg-purple-50 text-purple-600 border border-purple-100' :
-                            init.status === 'Development' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                                init.status === 'Released' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
-                                    'bg-slate-50 text-slate-600 border border-slate-100'
-                        }`}
-                >
-                    {STATUS_OPTIONS.map(opt => (
-                        <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                </select>
-            </td>
-            <td className="px-6 py-4">
-                <select
-                    value={init.pm || ''}
-                    onChange={(e) => handleFieldChange(init.id, 'pm', e.target.value)}
-                    className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none w-full text-slate-600"
-                >
-                    <option value="">Select PM</option>
-                    {PM_OPTIONS.map(opt => (
-                        <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                </select>
-            </td>
-            <td className="px-6 py-4">
-                <select
-                    value={init.ux || ''}
-                    onChange={(e) => handleFieldChange(init.id, 'ux', e.target.value)}
-                    className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none w-full text-slate-600"
-                >
-                    <option value="">Select UX</option>
-                    {UX_OPTIONS.map(opt => (
-                        <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                </select>
-            </td>
-            <td className="px-6 py-4">
-                <select
-                    value={init.group || ''}
-                    onChange={(e) => handleFieldChange(init.id, 'group', e.target.value)}
-                    className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none w-full text-slate-600"
-                >
-                    <option value="">Select Group</option>
-                    {GROUP_OPTIONS.map(opt => (
-                        <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                </select>
-            </td>
-            <td className="px-6 py-4">
-                <input
-                    value={init.techLead || ''}
-                    title={init.techLead || ''}
-                    onChange={(e) => handleFieldChange(init.id, 'techLead', e.target.value)}
-                    className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none w-full text-slate-600 truncate"
-                    placeholder="Lead"
-                />
-            </td>
-            <td className="px-6 py-4 text-slate-500 text-xs">
-                <input
-                    value={Array.isArray(init.developers) ? init.developers.join(', ') : init.developers || ''}
-                    title={Array.isArray(init.developers) ? init.developers.join(', ') : init.developers || ''}
-                    onChange={(e) => handleFieldChange(init.id, 'developers', e.target.value.split(',').map(d => d.trim()))}
-                    className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none w-full text-slate-600 truncate"
-                    placeholder="Devs..."
-                />
-            </td>
-            <td className="px-6 py-4 text-slate-500 text-xs text-right">
-                <button
-                    type="button"
-                    onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleDeleteInitiative(init.id, init.name);
-                    }}
-                    className="p-2 text-slate-300 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50"
-                    title="Delete Initiative"
-                >
-                    <Trash2 className="w-4 h-4" />
-                </button>
-            </td>
-        </tr>
+        <React.Fragment>
+            <tr
+                ref={setNodeRef}
+                style={style}
+                className={`hover:bg-slate-50 transition-colors group ${isDragging ? 'bg-white shadow-lg opacity-80' : ''}`}
+            >
+                <td className="w-10 px-4">
+                    <button
+                        {...attributes}
+                        {...listeners}
+                        className="p-1 text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing"
+                        title="Drag to reorder"
+                    >
+                        <GripVertical className="w-4 h-4" />
+                    </button>
+                </td>
+                <td className="px-6 py-4 font-medium text-slate-900">
+                    <div className="flex items-center gap-2">
+                        {init.releasePlans?.length > 0 && (
+                            <button
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setIsExpanded(!isExpanded);
+                                }}
+                                className="p-1 bg-white border border-slate-200 shadow-sm rounded-md text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-all flex items-center justify-center translate-y-px"
+                                title={isExpanded ? "Collapse" : "Expand Releases"}
+                            >
+                                {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                            </button>
+                        )}
+                        <Link
+                            to={`/plan/${encodeURIComponent(init.id)}`}
+                            className="text-blue-600 hover:text-blue-800 hover:underline font-medium truncate"
+                            title={init.name}
+                        >
+                            {init.name}
+                        </Link>
+                    </div>
+                </td>
+                <td className="px-6 py-4">
+                    <select
+                        value={init.status}
+                        onChange={(e) => handleFieldChange(init.id, 'status', e.target.value)}
+                        className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider w-full text-center border-none focus:ring-2 focus:ring-blue-400 outline-none transition-all ${init.status === 'Initial Planning' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
+                            init.status === 'Release Planning' ? 'bg-purple-50 text-purple-600 border border-purple-100' :
+                                init.status === 'Development' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
+                                    init.status === 'Released' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                                        'bg-slate-50 text-slate-600 border border-slate-100'
+                            }`}
+                    >
+                        {STATUS_OPTIONS.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                    </select>
+                </td>
+                <td className="px-6 py-4">
+                    <select
+                        value={init.pm || ''}
+                        onChange={(e) => handleFieldChange(init.id, 'pm', e.target.value)}
+                        className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none w-full text-slate-600"
+                    >
+                        <option value="">Select PM</option>
+                        {PM_OPTIONS.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                    </select>
+                </td>
+                <td className="px-6 py-4">
+                    <select
+                        value={init.ux || ''}
+                        onChange={(e) => handleFieldChange(init.id, 'ux', e.target.value)}
+                        className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none w-full text-slate-600"
+                    >
+                        <option value="">Select UX</option>
+                        {UX_OPTIONS.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                    </select>
+                </td>
+                <td className="px-6 py-4">
+                    <select
+                        value={init.group || ''}
+                        onChange={(e) => handleFieldChange(init.id, 'group', e.target.value)}
+                        className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none w-full text-slate-600"
+                    >
+                        <option value="">Select Group</option>
+                        {GROUP_OPTIONS.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                    </select>
+                </td>
+                <td className="px-6 py-4">
+                    <input
+                        value={init.techLead || ''}
+                        title={init.techLead || ''}
+                        onChange={(e) => handleFieldChange(init.id, 'techLead', e.target.value)}
+                        className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none w-full text-slate-600 truncate"
+                        placeholder="Lead"
+                    />
+                </td>
+                <td className="px-6 py-4 text-slate-500 text-xs">
+                    <input
+                        value={Array.isArray(init.developers) ? init.developers.join(', ') : init.developers || ''}
+                        title={Array.isArray(init.developers) ? init.developers.join(', ') : init.developers || ''}
+                        onChange={(e) => handleFieldChange(init.id, 'developers', e.target.value.split(',').map(d => d.trim()))}
+                        className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none w-full text-slate-600 truncate"
+                        placeholder="Devs..."
+                    />
+                </td>
+                <td className="px-6 py-4 text-slate-500 text-xs text-right">
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDeleteInitiative(init.id, init.name);
+                        }}
+                        className="p-2 text-slate-300 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50"
+                        title="Delete Initiative"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+                </td>
+            </tr>
+            {isExpanded && !isDragging && init.releasePlans?.map(rp => (
+                <tr key={rp.id} className="bg-blue-50/30 border-l-4 border-l-blue-400 transition-colors border-b border-slate-100/50">
+                    <td className="px-4"></td>
+                    <td className="px-6 py-3">
+                        <div className="flex items-center gap-2 pl-6">
+                            <Package className="w-3.5 h-3.5 text-blue-400" />
+                            <Link
+                                to={`/plan/${encodeURIComponent(init.id)}?view=release_plans#release-${rp.id}`}
+                                className="text-slate-600 font-medium text-xs hover:text-blue-600 hover:underline transition-colors truncate"
+                                title={rp.goal}
+                            >
+                                {rp.goal}
+                            </Link>
+                        </div>
+                    </td>
+                    <td className="px-6 py-3">
+                        <div className="flex justify-center">
+                            <select
+                                value={rp.status}
+                                onChange={(e) => handleReleasePhaseChange(init.id, rp.id, e.target.value)}
+                                className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border focus:ring-2 focus:ring-blue-400 outline-none transition-all ${rp.status === 'Planning' ? 'bg-purple-50 text-purple-600 border-purple-100' :
+                                    rp.status === 'Development' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                        rp.status === 'Released' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                            'bg-slate-50 text-slate-600 border-slate-100'
+                                    }`}
+                            >
+                                {RELEASE_STATUS_OPTIONS.map(opt => (
+                                    <option key={opt} value={opt}>{opt}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </td>
+                    <td colSpan={6} className="px-6 py-3"></td>
+                </tr>
+            ))}
+        </React.Fragment>
     );
 };
 
@@ -237,6 +291,30 @@ const Dashboard = () => {
             init.id === id ? { ...init, [field]: value } : init
         ));
         debouncedSync(id, field, value);
+    };
+
+    const handleReleasePhaseChange = async (initiativeId, releaseId, newStatus) => {
+        // Optimistic update
+        setInitiatives(prev => prev.map(init => {
+            if (init.id === initiativeId) {
+                return {
+                    ...init,
+                    releasePlans: init.releasePlans.map(rp =>
+                        rp.id === releaseId ? { ...rp, status: newStatus } : rp
+                    )
+                };
+            }
+            return init;
+        }));
+
+        try {
+            if (dataService.isConfigured()) {
+                await dataService.updateReleasePlan(initiativeId, releaseId, { status: newStatus });
+            }
+        } catch (err) {
+            console.error('Failed to update release status:', err);
+            loadInitiatives(); // Rollback
+        }
     };
 
     const handleCreateInitiative = async (name) => {
@@ -391,7 +469,7 @@ const Dashboard = () => {
                             <tr>
                                 <th className="w-10"></th>
                                 <th className="px-6 py-4 font-semibold text-slate-900 w-[25%]">Initiative Name</th>
-                                <th className="px-6 py-4 font-semibold text-slate-900 w-[200px]">Status</th>
+                                <th className="px-6 py-4 font-semibold text-slate-900 w-[200px]">Phase</th>
                                 <th className="px-6 py-4 font-semibold text-slate-900 w-[80px]">PM</th>
                                 <th className="px-6 py-4 font-semibold text-slate-900 w-[80px]">UX</th>
                                 <th className="px-6 py-4 font-semibold text-slate-900 w-[100px]">Group</th>
@@ -415,6 +493,7 @@ const Dashboard = () => {
                                             key={init.id}
                                             init={init}
                                             handleFieldChange={handleFieldChange}
+                                            handleReleasePhaseChange={handleReleasePhaseChange}
                                             handleDeleteInitiative={handleDeleteInitiative}
                                             STATUS_OPTIONS={STATUS_OPTIONS}
                                             PM_OPTIONS={PM_OPTIONS}

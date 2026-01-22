@@ -44,13 +44,6 @@ const ProtectedRoute = ({ children }) => {
                         Sign Out
                     </button>
                 </div>
-                {/* Debug Info */}
-                <div className="mt-8 p-4 bg-gray-100 rounded text-left text-xs font-mono text-gray-500 overflow-auto max-w-md w-full">
-                    <p><strong>Debug Info:</strong></p>
-                    <p>Current User Email: "{user?.email}"</p>
-                    <p>Allowed Emails: {JSON.stringify(allowedEmails)}</p>
-                    <p>Match Check: {allowedEmails.includes(user?.email?.toLowerCase()) ? 'Yes' : 'No'}</p>
-                </div>
             </div>
         );
     }
