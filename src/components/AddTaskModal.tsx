@@ -92,9 +92,9 @@ export function AddTaskModal({ isOpen, onClose, onSubmit }: AddTaskModalProps) {
           <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Add New Task</h2>
           <button
             onClick={handleClose}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+            className="p-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 rounded-lg transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 

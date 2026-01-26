@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Plus } from 'lucide-react';
 
 const NewInitiativeModal = ({ isOpen, onClose, onSubmit }) => {
     const [name, setName] = useState('');
@@ -33,9 +33,9 @@ const NewInitiativeModal = ({ isOpen, onClose, onSubmit }) => {
                     <h2 className="text-xl font-bold text-slate-900">Create New Initiative</h2>
                     <button
                         onClick={onClose}
-                        className="text-slate-400 hover:text-slate-600 transition-colors"
+                        className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 rounded-lg transition-colors"
                     >
-                        <X className="w-5 h-5" />
+                        <X className="w-4 h-4" />
                     </button>
                 </div>
 
@@ -73,9 +73,10 @@ const NewInitiativeModal = ({ isOpen, onClose, onSubmit }) => {
                         <button
                             type="submit"
                             disabled={!name.trim() || isSubmitting}
-                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
                         >
-                            {isSubmitting ? 'Creating...' : 'Create Initiative'}
+                            <Plus className="w-4 h-4" />
+                            {isSubmitting ? 'Creating...' : 'Create'}
                         </button>
                     </div>
                 </form>

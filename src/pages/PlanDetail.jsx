@@ -7,7 +7,7 @@ import { ReleaseProvider, useReleaseData } from '../hooks/useReleaseData';
 import InitiativeLiveStatus from '../components/InitiativeLiveStatus';
 
 const PlanHeader = () => {
-    const { data, isSyncing } = useReleaseData();
+    const { data, isSyncing, updateInitiativeMeta } = useReleaseData();
     const meta = data?.Initiative || {};
 
     return (
@@ -30,12 +30,48 @@ const PlanHeader = () => {
                                     {meta.Status || 'Draft'}
                                 </span>
                             </div>
-                            <div className="flex items-center gap-4 mt-1 text-sm text-slate-500">
-                                <span>PM: {meta.PM}</span>
-                                <span>•</span>
-                                <span>UX: {meta.UX}</span>
-                                <span>•</span>
-                                <span>Group: {meta.Group}</span>
+                            <div className="flex items-center gap-6 mt-2 text-sm text-slate-500">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="font-semibold text-slate-400">PM:</span>
+                                    <input
+                                        value={meta.PM || ''}
+                                        onChange={(e) => updateInitiativeMeta('PM', e.target.value)}
+                                        className="bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white outline-none transition-all px-1 rounded-sm w-32 font-medium text-slate-700"
+                                        placeholder="Add PM..."
+                                    />
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="font-semibold text-slate-400">UX:</span>
+                                    <input
+                                        value={meta.UX || ''}
+                                        onChange={(e) => updateInitiativeMeta('UX', e.target.value)}
+                                        className="bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white outline-none transition-all px-1 rounded-sm w-32 font-medium text-slate-700"
+                                        placeholder="Add UX..."
+                                    />
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="font-semibold text-slate-400">Tech Lead:</span>
+                                    <input
+                                        value={meta.TechLead || ''}
+                                        onChange={(e) => updateInitiativeMeta('TechLead', e.target.value)}
+                                        className="bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white outline-none transition-all px-1 rounded-sm w-32 font-medium text-slate-700"
+                                        placeholder="Add Tech Lead..."
+                                    />
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="font-semibold text-slate-400">Group:</span>
+                                    <select
+                                        value={meta.Group || ''}
+                                        onChange={(e) => updateInitiativeMeta('Group', e.target.value)}
+                                        className="bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white outline-none transition-all px-1 rounded-sm font-medium text-slate-700 cursor-pointer"
+                                    >
+                                        <option value="">Select Group</option>
+                                        <option value="Pegasus">Pegasus</option>
+                                        <option value="Zebra">Zebra</option>
+                                        <option value="Dolphin">Dolphin</option>
+                                        <option value="Falcon">Falcon</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>

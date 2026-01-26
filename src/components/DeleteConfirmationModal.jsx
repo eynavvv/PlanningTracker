@@ -13,9 +13,9 @@ const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, i
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors"
+                        className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 rounded-lg transition-colors"
                     >
-                        <X className="w-5 h-5" />
+                        <X className="w-4 h-4" />
                     </button>
                 </div>
 
