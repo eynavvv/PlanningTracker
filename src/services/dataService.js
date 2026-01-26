@@ -616,6 +616,132 @@ class DataService {
         }
     }
 
+    // ==========================================
+    // Tasks (Roadmap Fillers) CRUD
+    // ==========================================
+
+    /**
+     * Get all tasks ordered by display_order
+     */
+    async getTasks() {
+        try {
+            const { data, error } = await supabase
+                .from('tasks')
+                .select('*')
+                .order('display_order', { ascending: true });
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('Error fetching tasks:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Create a new task
+     */
+    async createTask(task) {
+        try {
+            // Get the highest display_order to put new task at the end
+            const { data: existingTasks } = await supabase
+                .from('tasks')
+                .select('display_order')
+                .order('display_order', { ascending: false })
+                .limit(1);
+
+            const maxOrder = existingTasks?.[0]?.display_order ?? -1;
+
+            const { data, error } = await supabase
+                .from('tasks')
+                .insert([{
+                    name: task.name,
+                    description: task.description || null,
+                    pm: task.pm || null,
+                    ux: task.ux || null,
+                    group: task.group || null,
+                    developers: task.developers || null,
+                    type: task.type || null,
+                    target_date: task.target_date || null,
+                    backlog: task.backlog || null,
+                    jira_link: task.jira_link || null,
+                    phase: task.phase || 'Planning',
+                    display_order: maxOrder + 1
+                }])
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('Error creating task:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Update a task
+     */
+    async updateTask(taskId, updates) {
+        try {
+            const dbUpdates = { ...updates };
+
+            const { error } = await supabase
+                .from('tasks')
+                .update(dbUpdates)
+                .eq('id', taskId);
+
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error('Error updating task:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Delete a task
+     */
+    async deleteTask(taskId) {
+        try {
+            const { error } = await supabase
+                .from('tasks')
+                .delete()
+                .eq('id', taskId);
+
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error('Error deleting task:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Update task order
+     */
+    async updateTaskOrder(orderedIds) {
+        try {
+            const updates = orderedIds.map((id, index) => ({
+                id,
+                display_order: index
+            }));
+
+            await Promise.all(
+                updates.map(update =>
+                    supabase
+                        .from('tasks')
+                        .update({ display_order: update.display_order })
+                        .eq('id', update.id)
+                )
+            );
+            return { success: true };
+        } catch (error) {
+            console.error('Error updating task order:', error);
+            throw error;
+        }
+    }
+
     isConfigured() {
         return !!(supabaseUrl && supabaseAnonKey);
     }
