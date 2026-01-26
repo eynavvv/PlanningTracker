@@ -294,7 +294,7 @@ export function ReleasePlanGroup({
                 </span>
                 <button
                   onClick={() => setShowIframe(false)}
-                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
+                  className="p-1.5 rounded-lg transition-colors text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50"
                 >
                   <Plus className="w-4 h-4 rotate-45" />
                 </button>

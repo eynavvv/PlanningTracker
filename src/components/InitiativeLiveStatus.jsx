@@ -100,9 +100,9 @@ const InitiativeLiveStatus = () => {
                             {!isAdding && (
                                 <button
                                     onClick={() => setIsAdding(true)}
-                                    className="px-3 py-1 bg-ss-action text-white text-[10px] font-black rounded-lg border-b-2 border-blue-700 flex items-center gap-1.5 hover:bg-ss-primary transition-all active:scale-95"
+                                    className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg flex items-center gap-1 transition-all shadow-sm"
                                 >
-                                    <Plus className="w-3 h-3" /> ADD DELIVERABLE
+                                    <Plus className="w-3.5 h-3.5" /> Add
                                 </button>
                             )}
                         </div>
@@ -132,11 +132,18 @@ const InitiativeLiveStatus = () => {
                                             type="submit"
                                             disabled={!newDeliverableName}
                                             className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${!newDeliverableName
-                                                ? 'bg-slate-200 text-slate-400 border-2 border-slate-200'
-                                                : 'bg-ss-action text-white hover:bg-ss-primary border-b-[4px] border-blue-700'
+                                                ? 'bg-slate-200 border-2 border-slate-200'
+                                                : 'bg-blue-600 hover:bg-blue-700 shadow-sm'
                                                 }`}
                                         >
-                                            <Plus className="w-6 h-6" />
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                viewBox="0 0 24 24"
+                                                fill={!newDeliverableName ? '#94a3b8' : 'white'}
+                                                className="w-5 h-5"
+                                            >
+                                                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                                            </svg>
                                         </button>
                                         <button
                                             type="button"

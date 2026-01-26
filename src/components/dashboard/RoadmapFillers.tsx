@@ -268,10 +268,10 @@ function SortableTaskRow({ task, onDelete, onUpdate }: SortableTaskRowProps) {
         ) : (
           <button
             onClick={() => startEditing('jira_link', '')}
-            className="text-slate-300 dark:text-slate-600 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+            className="p-0.5 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 bg-slate-100 dark:bg-slate-700 rounded transition-colors"
             title="Add Jira link"
           >
-            <ExternalLink className="w-4 h-4" />
+            <Pencil className="w-3 h-3" />
           </button>
         )}
       </td>
@@ -342,73 +342,73 @@ export function RoadmapFillers({
 
       {/* Table */}
       {!isCollapsed && (
-      <>
-      <div className="overflow-x-auto">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
-              <tr>
-                <th className="w-10"></th>
-                <th className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[25%]">Task</th>
-                <th className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[80px]">Type</th>
-                <th className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[120px]">Phase</th>
-                <th className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[120px]">Target Date</th>
-                <th className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[80px]">Backlog</th>
-                <th className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[80px]">Group</th>
-                <th className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[50px]">Jira</th>
-                <th className="w-10"></th>
-              </tr>
-            </thead>
-            <SortableContext
-              items={tasks.map(t => t.id)}
-              strategy={verticalListSortingStrategy}
+        <>
+          <div className="overflow-x-auto">
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
             >
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                {tasks.length === 0 ? (
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                   <tr>
-                    <td colSpan={9} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
-                      <div className="flex flex-col items-center gap-3">
-                        <Layers className="w-10 h-10 text-slate-300 dark:text-slate-600" />
-                        <p className="font-medium">No tasks yet</p>
-                        <p className="text-sm">Add a task to fill your roadmap</p>
-                        <button
-                          onClick={onAddTask}
-                          className="mt-2 text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium"
-                        >
-                          Add your first task
-                        </button>
-                      </div>
-                    </td>
+                    <th className="w-10"></th>
+                    <th className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[25%]">Task</th>
+                    <th className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[80px]">Type</th>
+                    <th className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[120px]">Phase</th>
+                    <th className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[120px]">Target Date</th>
+                    <th className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[80px]">Backlog</th>
+                    <th className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[80px]">Group</th>
+                    <th className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[50px]">Jira</th>
+                    <th className="w-10"></th>
                   </tr>
-                ) : (
-                  tasks.map((task) => (
-                    <SortableTaskRow
-                      key={task.id}
-                      task={task}
-                      onDelete={onDeleteTask}
-                      onUpdate={onUpdateTask}
-                    />
-                  ))
-                )}
-              </tbody>
-            </SortableContext>
-          </table>
-        </DndContext>
-      </div>
-      <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex justify-end">
-        <button
-          onClick={onAddTask}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-sm font-medium transition-all inline-flex items-center gap-2 text-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Add Task
-        </button>
-      </div>
-      </>
+                </thead>
+                <SortableContext
+                  items={tasks.map(t => t.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                    {tasks.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                          <div className="flex flex-col items-center gap-3">
+                            <Layers className="w-10 h-10 text-slate-300 dark:text-slate-600" />
+                            <p className="font-medium">No tasks yet</p>
+                            <p className="text-sm">Add a task to fill your roadmap</p>
+                            <button
+                              onClick={onAddTask}
+                              className="mt-2 text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium"
+                            >
+                              Add your first task
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      tasks.map((task) => (
+                        <SortableTaskRow
+                          key={task.id}
+                          task={task}
+                          onDelete={onDeleteTask}
+                          onUpdate={onUpdateTask}
+                        />
+                      ))
+                    )}
+                  </tbody>
+                </SortableContext>
+              </table>
+            </DndContext>
+          </div>
+          <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex justify-end">
+            <button
+              onClick={onAddTask}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-sm font-medium transition-all inline-flex items-center gap-2 text-sm"
+            >
+              <Plus className="w-4 h-4" />
+              Add Task
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
