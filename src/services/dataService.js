@@ -66,7 +66,7 @@ class DataService {
             // Fetch all release plans
             const { data: releasePlans, error: rpError } = await supabase
                 .from('release_plans')
-                .select('id, initiative_id, goal, planning_start_date, planning_end_date, dev_start_date, dev_end_date, status');
+                .select('id, initiative_id, goal, pre_planning_start_date, pre_planning_end_date, planning_start_date, planning_end_date, dev_start_date, dev_end_date, qa_event_date, status');
 
             if (rpError) throw rpError;
 
@@ -142,16 +142,17 @@ class DataService {
             const releasePlans = plans.map(plan => ({
                 id: plan.id,
                 goal: plan.goal || '',
+                prePlanningStartDate: plan.pre_planning_start_date || '',
+                prePlanningEndDate: plan.pre_planning_end_date || '',
                 planningStartDate: plan.planning_start_date || '',
                 planningEndDate: plan.planning_end_date || '',
                 devStartDate: plan.dev_start_date || '',
                 devEndDate: plan.dev_end_date || '',
                 status: plan.status || '',
-                loe: plan.loe || '',
                 reqDoc: plan.req_doc || '',
                 devs: plan.devs || '',
                 devPlan: plan.kpi || '',
-                internalReleaseDate: plan.internal_release_date || '',
+                qaEventDate: plan.qa_event_date || '',
                 externalReleaseDate: plan.external_release_date || '',
                 Epics: epics.filter(e => e.release_plan_id === plan.id).map(e => ({
                     id: e.id,
@@ -372,6 +373,14 @@ class DataService {
     async updateReleasePlan(initiativeId, planId, updates) {
         try {
             const dbUpdates = { ...updates };
+            if (dbUpdates.prePlanningStartDate !== undefined) {
+                dbUpdates.pre_planning_start_date = dbUpdates.prePlanningStartDate;
+                delete dbUpdates.prePlanningStartDate;
+            }
+            if (dbUpdates.prePlanningEndDate !== undefined) {
+                dbUpdates.pre_planning_end_date = dbUpdates.prePlanningEndDate;
+                delete dbUpdates.prePlanningEndDate;
+            }
             if (dbUpdates.planningStartDate) {
                 dbUpdates.planning_start_date = dbUpdates.planningStartDate;
                 delete dbUpdates.planningStartDate;
@@ -392,9 +401,9 @@ class DataService {
                 dbUpdates.req_doc = dbUpdates.reqDoc;
                 delete dbUpdates.reqDoc;
             }
-            if (dbUpdates.internalReleaseDate) {
-                dbUpdates.internal_release_date = dbUpdates.internalReleaseDate;
-                delete dbUpdates.internalReleaseDate;
+            if (dbUpdates.qaEventDate !== undefined) {
+                dbUpdates.qa_event_date = dbUpdates.qaEventDate;
+                delete dbUpdates.qaEventDate;
             }
             if (dbUpdates.externalReleaseDate) {
                 dbUpdates.external_release_date = dbUpdates.externalReleaseDate;
@@ -612,6 +621,132 @@ class DataService {
             return { success: true };
         } catch (error) {
             console.error('Error deleting deliverable:', error);
+            throw error;
+        }
+    }
+
+    // ==========================================
+    // Tasks (Roadmap Fillers) CRUD
+    // ==========================================
+
+    /**
+     * Get all tasks ordered by display_order
+     */
+    async getTasks() {
+        try {
+            const { data, error } = await supabase
+                .from('tasks')
+                .select('*')
+                .order('display_order', { ascending: true });
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('Error fetching tasks:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Create a new task
+     */
+    async createTask(task) {
+        try {
+            // Get the highest display_order to put new task at the end
+            const { data: existingTasks } = await supabase
+                .from('tasks')
+                .select('display_order')
+                .order('display_order', { ascending: false })
+                .limit(1);
+
+            const maxOrder = existingTasks?.[0]?.display_order ?? -1;
+
+            const { data, error } = await supabase
+                .from('tasks')
+                .insert([{
+                    name: task.name,
+                    description: task.description || null,
+                    pm: task.pm || null,
+                    ux: task.ux || null,
+                    group: task.group || null,
+                    developers: task.developers || null,
+                    type: task.type || null,
+                    target_date: task.target_date || null,
+                    backlog: task.backlog || null,
+                    jira_link: task.jira_link || null,
+                    phase: task.phase || 'Planning',
+                    display_order: maxOrder + 1
+                }])
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('Error creating task:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Update a task
+     */
+    async updateTask(taskId, updates) {
+        try {
+            const dbUpdates = { ...updates };
+
+            const { error } = await supabase
+                .from('tasks')
+                .update(dbUpdates)
+                .eq('id', taskId);
+
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error('Error updating task:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Delete a task
+     */
+    async deleteTask(taskId) {
+        try {
+            const { error } = await supabase
+                .from('tasks')
+                .delete()
+                .eq('id', taskId);
+
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error('Error deleting task:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Update task order
+     */
+    async updateTaskOrder(orderedIds) {
+        try {
+            const updates = orderedIds.map((id, index) => ({
+                id,
+                display_order: index
+            }));
+
+            await Promise.all(
+                updates.map(update =>
+                    supabase
+                        .from('tasks')
+                        .update({ display_order: update.display_order })
+                        .eq('id', update.id)
+                )
+            );
+            return { success: true };
+        } catch (error) {
+            console.error('Error updating task order:', error);
             throw error;
         }
     }

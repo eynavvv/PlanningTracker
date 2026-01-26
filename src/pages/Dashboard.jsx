@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Plus, Search, Trash2, GripVertical, ChevronRight, ChevronDown, Package, PartyPopper, Calendar } from 'lucide-react';
+import { ChevronDown, ChevronUp, Target, Plus } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import NewInitiativeModal from '../components/NewInitiativeModal';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import TimelineView from '../components/TimelineView';
+import { DashboardHeader, SortableInitiativeRow, InitiativeFilters, RoadmapFillers, STATUS_OPTIONS, PM_OPTIONS, UX_OPTIONS, GROUP_OPTIONS } from '../components/dashboard';
+import { AddTaskModal } from '../components/AddTaskModal';
+import { DashboardSkeleton } from '../components/skeletons';
+import { useFilters } from '../hooks/useFilters';
 
 // dnd-kit imports
 import {
@@ -21,252 +25,32 @@ import {
     SortableContext,
     sortableKeyboardCoordinates,
     verticalListSortingStrategy,
-    useSortable,
 } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-
-// Dropdown options based on user schema
-const STATUS_OPTIONS = ['Initiative Planning', 'Release Planning', 'Development', 'Released'];
-const PM_OPTIONS = ['Naama', 'Asaf', 'Sapir'];
-const UX_OPTIONS = ['Tal', 'Maya', 'Naor'];
-const GROUP_OPTIONS = ['Zebra', 'Pegasus'];
-const RELEASE_STATUS_OPTIONS = ['Planning', 'Development', 'Released'];
-
-const SortableInitiativeRow = ({
-    init,
-    handleFieldChange,
-    handleReleasePhaseChange,
-    STATUS_OPTIONS,
-    PM_OPTIONS,
-    UX_OPTIONS,
-    GROUP_OPTIONS
-}) => {
-    const [isExpanded, setIsExpanded] = React.useState(false);
-    const {
-        attributes,
-        listeners,
-        setNodeRef,
-        transform,
-        transition,
-        isDragging
-    } = useSortable({ id: init.id });
-
-    const style = {
-        transform: CSS.Transform.toString(transform),
-        transition,
-        zIndex: isDragging ? 50 : 'auto',
-        position: 'relative'
-    };
-
-    return (
-        <React.Fragment>
-            <tr
-                ref={setNodeRef}
-                style={style}
-                className={`hover:bg-slate-50 transition-colors ${isDragging ? 'bg-white shadow-lg opacity-80' : ''}`}
-            >
-                <td className="w-10 px-4">
-                    <button
-                        {...attributes}
-                        {...listeners}
-                        className="p-1.5 rounded-lg bg-blue-50 text-blue-400 hover:bg-blue-100 hover:text-blue-600 cursor-grab active:cursor-grabbing transition-colors"
-                        title="Drag to reorder"
-                    >
-                        <GripVertical className="w-4 h-4" />
-                    </button>
-                </td>
-                <td className="px-6 py-4 font-medium text-slate-900">
-                    <div className="flex items-center gap-2">
-                        {init.releasePlans?.length > 0 && (
-                            <button
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setIsExpanded(!isExpanded);
-                                }}
-                                className="w-5 h-5 min-w-[20px] min-h-[20px] bg-white border border-slate-300 shadow-sm rounded-full text-slate-500 hover:text-blue-600 hover:border-blue-500 transition-all flex items-center justify-center flex-shrink-0"
-                                style={{ aspectRatio: '1/1', padding: '0' }}
-                                title={isExpanded ? "Collapse" : "Expand Releases"}
-                            >
-                                {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                            </button>
-                        )}
-                        <div className="relative group w-fit max-w-full min-w-0">
-                            <Link
-                                to={`/plan/${encodeURIComponent(init.id)}`}
-                                className="text-blue-600 hover:text-blue-800 hover:underline font-medium truncate block"
-                            >
-                                {init.name}
-                            </Link>
-
-                            {/* Tooltip - show only if detailedStatus exists */}
-                            {init.detailedStatus && (
-                                <div className="invisible group-hover:visible absolute bottom-full left-0 mb-2 p-3 bg-ss-navy text-white rounded-lg shadow-xl z-[100] w-72 pointer-events-none before:content-[''] before:absolute before:top-full before:left-6 before:border-8 before:border-transparent before:border-t-ss-navy">
-                                    <div className="text-xs font-bold mb-2 border-b border-blue-400/30 pb-1 text-center truncate">{init.name}</div>
-                                    <div className="text-blue-300 text-[9px] uppercase tracking-widest font-black mb-1 opacity-80">Current Focus</div>
-                                    <div className="text-[10px] italic text-blue-50 leading-relaxed bg-blue-900/40 p-2 rounded-lg border border-blue-400/10">
-                                        "{init.detailedStatus}"
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </td>
-                <td className="px-6 py-4">
-                    <select
-                        value={init.status}
-                        onChange={(e) => handleFieldChange(init.id, 'status', e.target.value)}
-                        className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider w-full text-center border-none focus:ring-2 focus:ring-blue-400 outline-none transition-all ${init.status === 'Initiative Planning' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
-                            init.status === 'Release Planning' ? 'bg-purple-50 text-purple-600 border border-purple-100' :
-                                init.status === 'Development' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                                    init.status === 'Released' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
-                                        'bg-slate-50 text-slate-600 border border-slate-100'
-                            }`}
-                    >
-                        {STATUS_OPTIONS.map(opt => (
-                            <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                    </select>
-                </td>
-                <td className="px-6 py-4">
-                    <select
-                        value={init.pm || ''}
-                        onChange={(e) => handleFieldChange(init.id, 'pm', e.target.value)}
-                        className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none w-full text-slate-600"
-                    >
-                        <option value="">Select PM</option>
-                        {PM_OPTIONS.map(opt => (
-                            <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                    </select>
-                </td>
-                <td className="px-6 py-4">
-                    <select
-                        value={init.ux || ''}
-                        onChange={(e) => handleFieldChange(init.id, 'ux', e.target.value)}
-                        className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none w-full text-slate-600"
-                    >
-                        <option value="">Select UX</option>
-                        {UX_OPTIONS.map(opt => (
-                            <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                    </select>
-                </td>
-                <td className="px-6 py-4">
-                    <select
-                        value={init.group || ''}
-                        onChange={(e) => handleFieldChange(init.id, 'group', e.target.value)}
-                        className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none w-full text-slate-600"
-                    >
-                        <option value="">Select Group</option>
-                        {GROUP_OPTIONS.map(opt => (
-                            <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                    </select>
-                </td>
-                <td className="px-6 py-4">
-                    <input
-                        value={init.techLead || ''}
-                        title={init.techLead || ''}
-                        onChange={(e) => handleFieldChange(init.id, 'techLead', e.target.value)}
-                        className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none w-full text-slate-600 truncate"
-                        placeholder="Lead"
-                    />
-                </td>
-                <td className="px-6 py-4 text-slate-500 text-xs">
-                    <input
-                        value={Array.isArray(init.developers) ? init.developers.join(', ') : init.developers || ''}
-                        title={Array.isArray(init.developers) ? init.developers.join(', ') : init.developers || ''}
-                        onChange={(e) => handleFieldChange(init.id, 'developers', e.target.value.split(',').map(d => d.trim()))}
-                        className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none w-full text-slate-600 truncate"
-                        placeholder="Devs..."
-                    />
-                </td>
-                <td className="px-6 py-4 text-slate-500 text-xs text-right">
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleDeleteInitiative(init.id, init.name);
-                        }}
-                        className="p-2 text-slate-300 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50"
-                        title="Delete Initiative"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </button>
-                </td>
-            </tr>
-            {
-                isExpanded && !isDragging && init.releasePlans?.map(rp => (
-                    <tr key={rp.id} className="bg-blue-50/30 border-l-4 border-l-blue-400 transition-colors border-b border-slate-100/50">
-                        <td className="px-4"></td>
-                        <td className="px-6 py-3">
-                            <div className="flex items-center gap-2 pl-6">
-                                <Package className="w-3.5 h-3.5 text-blue-400" />
-                                <Link
-                                    to={`/plan/${encodeURIComponent(init.id)}?view=release_plans#release-${rp.id}`}
-                                    className="text-slate-600 font-medium text-xs hover:text-blue-600 hover:underline transition-colors truncate"
-                                    title={rp.goal}
-                                >
-                                    {rp.goal}
-                                </Link>
-                            </div>
-                        </td>
-                        <td className="px-6 py-3">
-                            <select
-                                value={rp.status}
-                                onChange={(e) => handleReleasePhaseChange(init.id, rp.id, e.target.value)}
-                                className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider w-full text-center border focus:ring-2 focus:ring-blue-400 outline-none transition-all ${rp.status === 'Planning' ? 'bg-purple-50 text-purple-600 border-purple-100' :
-                                    rp.status === 'Development' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                                        rp.status === 'Released' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                            'bg-slate-50 text-slate-600 border-slate-100'
-                                    }`}
-                            >
-                                {RELEASE_STATUS_OPTIONS.map(opt => (
-                                    <option key={opt} value={opt}>{opt}</option>
-                                ))}
-                            </select>
-                        </td>
-                        <td className="px-6 py-3" colSpan={6}>
-                            <div className="flex items-center gap-4 whitespace-nowrap">
-                                {rp.status === 'Planning' && rp.planning_end_date && (
-                                    <div className="flex items-center gap-1.5 text-[11px] text-purple-600 font-bold bg-purple-50/50 px-3 py-1.5 rounded-full border border-purple-100/50 uppercase tracking-tight">
-                                        <Calendar className="w-3.5 h-3.5" />
-                                        <span>Target: {format(new Date(rp.planning_end_date), 'MMM d, yyyy')}</span>
-                                    </div>
-                                )}
-
-                                {rp.status === 'Development' && rp.dev_end_date && (
-                                    <div className="flex items-center gap-1.5 text-[11px] text-amber-600 font-bold bg-amber-50/50 px-3 py-1.5 rounded-full border border-amber-100/50 uppercase tracking-tight">
-                                        <Calendar className="w-3.5 h-3.5" />
-                                        <span>Target: {format(new Date(rp.dev_end_date), 'MMM d, yyyy')}</span>
-                                    </div>
-                                )}
-
-                                {rp.status === 'Released' && (
-                                    <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 font-bold bg-emerald-50/50 px-3 py-1.5 rounded-full border border-emerald-100/50 uppercase tracking-tight animate-bounce">
-                                        <PartyPopper className="w-3.5 h-3.5" />
-                                        <span>Liftoff! 🎉</span>
-                                    </div>
-                                )}
-                            </div>
-                        </td>
-                    </tr>
-                ))
-            }
-        </React.Fragment >
-    );
-};
 
 const Dashboard = () => {
     const [initiatives, setInitiatives] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [deleteModal, setDeleteModal] = useState({ isOpen: false, item: null });
+    const [deleteModal, setDeleteModal] = useState({ isOpen: false, item: null, type: 'initiative' });
+    const [tasks, setTasks] = useState([]);
+    const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+    const [isInitiativesCollapsed, setIsInitiativesCollapsed] = useState(false);
+    const [isRoadmapFillersCollapsed, setIsRoadmapFillersCollapsed] = useState(false);
     const navigate = useNavigate();
     const syncTimeoutRef = useRef({});
+
+    // Use the filter hook for search and filtering
+    const {
+        filters,
+        filteredItems,
+        hasActiveFilters,
+        updateFilter,
+        toggleArrayFilter,
+        clearFilters,
+    } = useFilters(initiatives, {
+        searchFields: ['name', 'techLead'],
+    });
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -281,7 +65,21 @@ const Dashboard = () => {
 
     useEffect(() => {
         loadInitiatives();
+        loadTasks();
     }, []);
+
+    const loadTasks = async () => {
+        try {
+            if (!dataService.isConfigured()) {
+                setTasks([]);
+                return;
+            }
+            const tasksData = await dataService.getTasks();
+            setTasks(tasksData);
+        } catch (err) {
+            console.error("Failed to load tasks:", err);
+        }
+    };
 
     const loadInitiatives = async () => {
         try {
@@ -305,7 +103,6 @@ const Dashboard = () => {
         }
     };
 
-    // Debounced sync to sheet
     const debouncedSync = useCallback((initiativeId, field, value) => {
         if (syncTimeoutRef.current[initiativeId]) {
             clearTimeout(syncTimeoutRef.current[initiativeId]);
@@ -320,7 +117,7 @@ const Dashboard = () => {
                 console.error('Failed to sync to database:', err);
             }
         }, 1000);
-    }, [initiatives]);
+    }, []);
 
     const handleFieldChange = (id, field, value) => {
         setInitiatives(prev => prev.map(init =>
@@ -330,7 +127,6 @@ const Dashboard = () => {
     };
 
     const handleReleasePhaseChange = async (initiativeId, releaseId, newStatus) => {
-        // Optimistic update
         setInitiatives(prev => prev.map(init => {
             if (init.id === initiativeId) {
                 return {
@@ -349,7 +145,7 @@ const Dashboard = () => {
             }
         } catch (err) {
             console.error('Failed to update release status:', err);
-            loadInitiatives(); // Rollback
+            loadInitiatives();
         }
     };
 
@@ -362,28 +158,87 @@ const Dashboard = () => {
             throw err;
         }
     };
+
     const handleDeleteInitiative = async (id, name) => {
         setDeleteModal({
             isOpen: true,
-            item: { id, name }
+            item: { id, name },
+            type: 'initiative'
         });
+    };
+
+    // Task handlers
+    const handleCreateTask = async (taskData) => {
+        try {
+            const newTask = await dataService.createTask(taskData);
+            setTasks(prev => [...prev, newTask]);
+        } catch (err) {
+            console.error('Failed to create task:', err);
+            throw err;
+        }
+    };
+
+    const handleDeleteTask = (id, name) => {
+        setDeleteModal({
+            isOpen: true,
+            item: { id, name },
+            type: 'task'
+        });
+    };
+
+    const handleUpdateTask = async (id, field, value) => {
+        setTasks(prev => prev.map(task =>
+            task.id === id ? { ...task, [field]: value } : task
+        ));
+
+        try {
+            if (dataService.isConfigured()) {
+                await dataService.updateTask(id, { [field]: value });
+            }
+        } catch (err) {
+            console.error('Failed to update task:', err);
+            loadTasks();
+        }
+    };
+
+    const handleReorderTasks = async (orderedIds) => {
+        const newOrderedTasks = orderedIds.map(id => tasks.find(t => t.id === id)).filter(Boolean);
+        setTasks(newOrderedTasks);
+
+        try {
+            if (dataService.isConfigured()) {
+                await dataService.updateTaskOrder(orderedIds);
+            }
+        } catch (err) {
+            console.error('Failed to update task order:', err);
+            loadTasks();
+        }
     };
 
     const confirmDelete = async () => {
         const { id } = deleteModal.item;
+        const { type } = deleteModal;
+
         try {
-            if (dataService.isConfigured()) {
-                await dataService.deleteInitiative(id);
+            if (type === 'task') {
+                if (dataService.isConfigured()) {
+                    await dataService.deleteTask(id);
+                }
+                setTasks(prev => prev.filter(task => task.id !== id));
+            } else {
+                if (dataService.isConfigured()) {
+                    await dataService.deleteInitiative(id);
+                }
+                setInitiatives(prev => prev.filter(init => init.id !== id));
             }
-            setInitiatives(prev => prev.filter(init => init.id !== id));
         } catch (err) {
-            console.error('Failed to delete initiative:', err);
-            alert('Failed to delete initiative. Please check your database connection.');
+            console.error(`Failed to delete ${type}:`, err);
+            alert(`Failed to delete ${type}. Please check your database connection.`);
         }
     };
+
     const handleTimelineUpdate = async (item, newStartDate, newEndDate) => {
         try {
-            const updates = {};
             const startDateStr = format(newStartDate, 'yyyy-MM-dd');
             const endDateStr = format(newEndDate, 'yyyy-MM-dd');
 
@@ -391,6 +246,11 @@ const Dashboard = () => {
                 await dataService.updateInitialPlanning(item.initiativeId, {
                     StartDate: startDateStr,
                     PlannedEndDate: endDateStr
+                });
+            } else if (item.type === 'release-pre-planning') {
+                await dataService.updateReleasePlan(item.initiativeId, item.releaseId, {
+                    prePlanningStartDate: startDateStr,
+                    prePlanningEndDate: endDateStr
                 });
             } else if (item.type === 'release-planning') {
                 await dataService.updateReleasePlan(item.initiativeId, item.releaseId, {
@@ -404,7 +264,6 @@ const Dashboard = () => {
                 });
             }
 
-            // Optimistic update
             setInitiatives(prev => prev.map(init => {
                 if (init.id === item.initiativeId) {
                     if (item.type === 'initiative-planning') {
@@ -421,7 +280,9 @@ const Dashboard = () => {
                             ...init,
                             releasePlans: init.releasePlans.map(rp => {
                                 if (rp.id === item.releaseId) {
-                                    if (item.type === 'release-planning') {
+                                    if (item.type === 'release-pre-planning') {
+                                        return { ...rp, pre_planning_start_date: startDateStr, pre_planning_end_date: endDateStr };
+                                    } else if (item.type === 'release-planning') {
                                         return { ...rp, planning_start_date: startDateStr, planning_end_date: endDateStr };
                                     } else {
                                         return { ...rp, dev_start_date: startDateStr, dev_end_date: endDateStr };
@@ -436,7 +297,7 @@ const Dashboard = () => {
             }));
         } catch (err) {
             console.error("Failed to update date from timeline:", err);
-            loadInitiatives(); // Rollback on error
+            loadInitiatives();
         }
     };
 
@@ -449,7 +310,6 @@ const Dashboard = () => {
                 const newIndex = items.findIndex((i) => i.id === over.id);
                 const newOrderedItems = arrayMove(items, oldIndex, newIndex);
 
-                // Save new order to database
                 if (dataService.isConfigured()) {
                     dataService.updateInitiativeOrder(newOrderedItems.map(i => i.id))
                         .catch(err => console.error("Failed to sync new order:", err));
@@ -461,88 +321,129 @@ const Dashboard = () => {
     };
 
     if (isLoading) {
-        return (
-            <div className="flex h-96 items-center justify-center">
-                <div className="flex flex-col items-center gap-3">
-                    <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                    <span className="text-slate-500 font-medium">Loading Initiatives...</span>
-                </div>
-            </div>
-        );
+        return <DashboardSkeleton />;
     }
 
     return (
         <div className="space-y-8">
-            <div className="flex justify-between items-center">
-                <div className="flex items-center gap-5">
-                    <img src="/logo.png" alt="SundaySky" className="h-16 w-auto" />
-                    <div>
-                        <h1 className="text-3xl font-bold text-ss-navy">Initiatives Dashboard</h1>
-                        <p className="text-slate-500 mt-1">Manage and track all strategic initiatives.</p>
-                    </div>
-                </div>
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-2 bg-ss-primary hover:bg-ss-action text-white px-5 py-2.5 rounded-lg shadow-lg shadow-blue-500/20 font-medium transition-all"
-                >
-                    <Plus className="w-5 h-5" />
-                    <span>New Initiative</span>
-                </button>
-            </div>
+            <DashboardHeader />
 
             <TimelineView data={initiatives} onUpdateItem={handleTimelineUpdate} />
 
+            {/* Filter and search hidden for now
+            <InitiativeFilters
+                filters={filters}
+                onUpdateFilter={updateFilter}
+                onToggleArrayFilter={toggleArrayFilter}
+                onClearFilters={clearFilters}
+                hasActiveFilters={hasActiveFilters}
+                options={{
+                    status: STATUS_OPTIONS,
+                    pm: PM_OPTIONS,
+                    ux: UX_OPTIONS,
+                    group: GROUP_OPTIONS,
+                }}
+            />
+            */}
+
             {error && (
-                <div className="bg-red-50 text-red-700 p-4 rounded-lg border border-red-200">
+                <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 p-4 rounded-lg border border-red-200 dark:border-red-800">
                     {error}
                 </div>
             )}
 
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                        <thead className="bg-slate-50 border-b border-slate-200">
-                            <tr>
-                                <th className="w-10"></th>
-                                <th className="px-6 py-4 font-semibold text-slate-900 w-[25%]">Initiative Name</th>
-                                <th className="px-6 py-4 font-semibold text-slate-900 w-[200px]">Phase</th>
-                                <th className="px-6 py-4 font-semibold text-slate-900 w-[80px]">PM</th>
-                                <th className="px-6 py-4 font-semibold text-slate-900 w-[80px]">UX</th>
-                                <th className="px-6 py-4 font-semibold text-slate-900 w-[100px]">Group</th>
-                                <th className="px-6 py-4 font-semibold text-slate-900 w-[100px]">Tech Lead</th>
-                                <th className="px-6 py-4 font-semibold text-slate-900 w-[120px]">Developers</th>
-                                <th className="px-6 py-4 font-semibold text-slate-900 w-10"></th>
-                            </tr>
-                        </thead>
+            {/* Initiatives Section */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                {/* Collapsible Header */}
+                <button
+                    onClick={() => setIsInitiativesCollapsed(!isInitiativesCollapsed)}
+                    className="w-full px-6 py-3 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+                >
+                    <div className="flex items-center gap-3">
+                        <Target className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        <h2 className="font-bold text-slate-800 dark:text-slate-100">Initiatives</h2>
+                        <span className="text-[10px] bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold px-2 py-0.5 rounded uppercase tracking-wider">
+                            {initiatives.length} ITEMS
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-400">
+                        <span className="text-xs font-medium">{isInitiativesCollapsed ? 'Expand' : 'Collapse'}</span>
+                        {isInitiativesCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                    </div>
+                </button>
+
+                {/* Collapsible Content */}
+                {!isInitiativesCollapsed && (
+                    <>
                         <DndContext
                             sensors={sensors}
                             collisionDetection={closestCenter}
                             onDragEnd={handleDragEnd}
                         >
-                            <SortableContext
-                                items={initiatives.map(i => i.id)}
-                                strategy={verticalListSortingStrategy}
-                            >
-                                <tbody className="divide-y divide-slate-100">
-                                    {initiatives.map((init) => (
-                                        <SortableInitiativeRow
-                                            key={init.id}
-                                            init={init}
-                                            handleFieldChange={handleFieldChange}
-                                            handleReleasePhaseChange={handleReleasePhaseChange}
-                                            handleDeleteInitiative={handleDeleteInitiative}
-                                            STATUS_OPTIONS={STATUS_OPTIONS}
-                                            PM_OPTIONS={PM_OPTIONS}
-                                            UX_OPTIONS={UX_OPTIONS}
-                                            GROUP_OPTIONS={GROUP_OPTIONS}
-                                        />
-                                    ))}
-                                </tbody>
-                            </SortableContext>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-sm">
+                                    <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+                                        <tr>
+                                            <th className="w-10"></th>
+                                            <th className="px-6 py-4 font-semibold text-slate-900 dark:text-slate-100 w-[30%]">Initiative Name</th>
+                                            <th className="px-6 py-4 font-semibold text-slate-900 dark:text-slate-100 w-[200px]">Phase</th>
+                                            <th className="px-6 py-4 font-semibold text-slate-900 dark:text-slate-100 w-[150px]">Target Date</th>
+                                            <th className="px-6 py-4 font-semibold text-slate-900 dark:text-slate-100 w-[100px]">Group</th>
+                                            <th className="px-6 py-4 font-semibold text-slate-900 dark:text-slate-100 w-10"></th>
+                                        </tr>
+                                    </thead>
+                                    <SortableContext
+                                        items={initiatives.map(i => i.id)}
+                                        strategy={verticalListSortingStrategy}
+                                    >
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                                            {initiatives.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={6} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                                                        <p>No initiatives yet. Create your first one!</p>
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                initiatives.map((init) => (
+                                                    <SortableInitiativeRow
+                                                        key={init.id}
+                                                        init={init}
+                                                        handleFieldChange={handleFieldChange}
+                                                        handleReleasePhaseChange={handleReleasePhaseChange}
+                                                        handleDeleteInitiative={handleDeleteInitiative}
+                                                        STATUS_OPTIONS={STATUS_OPTIONS}
+                                                        GROUP_OPTIONS={GROUP_OPTIONS}
+                                                    />
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </SortableContext>
+                                </table>
+                            </div>
                         </DndContext>
-                    </table>
-                </div>
+                        <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex justify-end">
+                            <button
+                                onClick={() => setIsModalOpen(true)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-sm font-medium transition-all inline-flex items-center gap-2 text-sm"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Add Initiative
+                            </button>
+                        </div>
+                    </>
+                )}
             </div>
+
+            {/* Roadmap Fillers Section */}
+            <RoadmapFillers
+                tasks={tasks}
+                onAddTask={() => setIsTaskModalOpen(true)}
+                onDeleteTask={handleDeleteTask}
+                onUpdateTask={handleUpdateTask}
+                onReorderTasks={handleReorderTasks}
+                isCollapsed={isRoadmapFillersCollapsed}
+                onToggleCollapse={() => setIsRoadmapFillersCollapsed(!isRoadmapFillersCollapsed)}
+            />
 
             <NewInitiativeModal
                 isOpen={isModalOpen}
@@ -550,12 +451,20 @@ const Dashboard = () => {
                 onSubmit={handleCreateInitiative}
             />
 
+            <AddTaskModal
+                isOpen={isTaskModalOpen}
+                onClose={() => setIsTaskModalOpen(false)}
+                onSubmit={handleCreateTask}
+            />
+
             <DeleteConfirmationModal
                 isOpen={deleteModal.isOpen}
-                onClose={() => setDeleteModal({ isOpen: false, item: null })}
+                onClose={() => setDeleteModal({ isOpen: false, item: null, type: 'initiative' })}
                 onConfirm={confirmDelete}
-                title="Delete Initiative"
-                message="Are you sure you want to delete this initiative? All associated planning data, release plans, and epics will be permanently removed."
+                title={deleteModal.type === 'task' ? 'Delete Task' : 'Delete Initiative'}
+                message={deleteModal.type === 'task'
+                    ? 'Are you sure you want to delete this task? This action cannot be undone.'
+                    : 'Are you sure you want to delete this initiative? All associated planning data, release plans, and epics will be permanently removed.'}
                 itemName={deleteModal.item?.name}
             />
         </div>

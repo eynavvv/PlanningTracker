@@ -1,12 +1,19 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { dataService } from './services/dataService';
 import { AuthProvider } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { useRealtimeSync } from './hooks/useRealtimeSync';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import PlanDetail from './pages/PlanDetail';
 import './App.css';
+
+function RealtimeSyncProvider({ children }) {
+  useRealtimeSync();
+  return children;
+}
 
 function App() {
   const isConfigured = dataService.isConfigured();
@@ -34,26 +41,30 @@ function App() {
   }
 
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
+    <ThemeProvider>
+      <AuthProvider>
+        <RealtimeSyncProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<Login />} />
 
-          <Route path="/" element={
-            <ProtectedRoute>
-              <Layout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<Dashboard />} />
-            {/* Plan Routes */}
-            <Route path="plans" element={<Dashboard />} />
-            <Route path="plan/:id" element={<PlanDetail />} />
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }>
+                <Route index element={<Dashboard />} />
+                {/* Plan Routes */}
+                <Route path="plans" element={<Dashboard />} />
+                <Route path="plan/:id" element={<PlanDetail />} />
+                {/* Fallback */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </RealtimeSyncProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
