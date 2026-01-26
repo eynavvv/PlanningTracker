@@ -17,7 +17,13 @@ import {
     isEqual
 } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronUp, Calendar, Info, Clock, Layers } from 'lucide-react';
+import { ChevronDown, ChevronUp, Calendar, Info, Clock } from 'lucide-react';
+
+// Team logo images
+const TEAM_LOGOS = {
+    Pegasus: '/pegasus-logo.png',
+    Zebra: '/zebra-logo.png'
+};
 
 const TimelineView = ({ data, onUpdateItem }) => {
     const navigate = useNavigate();
@@ -42,6 +48,7 @@ const TimelineView = ({ data, onUpdateItem }) => {
                     type: 'initiative-planning',
                     initiativeName: initiative.name,
                     initiativeId: initiative.id,
+                    group: initiative.group,
                     detailedStatus: initiative.detailedStatus,
                     overallStatus: initiative.status
                 });
@@ -49,6 +56,24 @@ const TimelineView = ({ data, onUpdateItem }) => {
 
             // 2. Release Phases
             initiative.releasePlans?.forEach(rp => {
+                // Release Pre-Planning
+                if (rp.pre_planning_start_date && rp.pre_planning_end_date) {
+                    items.push({
+                        id: `release-pre-plan-${rp.id}`,
+                        name: rp.goal,
+                        phase: 'Pre-Planning',
+                        startDate: new Date(rp.pre_planning_start_date),
+                        endDate: new Date(rp.pre_planning_end_date),
+                        type: 'release-pre-planning',
+                        initiativeName: initiative.name,
+                        initiativeId: initiative.id,
+                        group: initiative.group,
+                        releaseId: rp.id,
+                        detailedStatus: initiative.detailedStatus,
+                        overallStatus: initiative.status
+                    });
+                }
+
                 // Release Planning
                 if (rp.planning_start_date && rp.planning_end_date) {
                     items.push({
@@ -60,6 +85,7 @@ const TimelineView = ({ data, onUpdateItem }) => {
                         type: 'release-planning',
                         initiativeName: initiative.name,
                         initiativeId: initiative.id,
+                        group: initiative.group,
                         releaseId: rp.id,
                         detailedStatus: initiative.detailedStatus,
                         overallStatus: initiative.status
@@ -77,6 +103,26 @@ const TimelineView = ({ data, onUpdateItem }) => {
                         type: 'release-dev',
                         initiativeName: initiative.name,
                         initiativeId: initiative.id,
+                        group: initiative.group,
+                        releaseId: rp.id,
+                        detailedStatus: initiative.detailedStatus,
+                        overallStatus: initiative.status
+                    });
+                }
+
+                // QA Event Milestone
+                if (rp.qa_event_date) {
+                    items.push({
+                        id: `qa-event-${rp.id}`,
+                        name: rp.goal,
+                        phase: 'QA Event',
+                        startDate: new Date(rp.qa_event_date),
+                        endDate: new Date(rp.qa_event_date),
+                        type: 'qa-event',
+                        isMilestone: true,
+                        initiativeName: initiative.name,
+                        initiativeId: initiative.id,
+                        group: initiative.group,
                         releaseId: rp.id,
                         detailedStatus: initiative.detailedStatus,
                         overallStatus: initiative.status
@@ -372,14 +418,29 @@ const TimelineView = ({ data, onUpdateItem }) => {
                                     subRows.push(initItems);
                                 }
 
+                                // Get the group from the first item in this initiative's items
+                                const initiativeGroup = items[0]?.group;
+                                const teamLogo = TEAM_LOGOS[initiativeGroup];
+
                                 return (
                                     <div key={name} className="relative flex flex-col gap-2 border-b border-slate-50 pb-2">
                                         <div className="sticky left-0 z-10 flex items-center gap-2 mb-3 pl-0 py-1 w-fit max-w-[calc(100vw-300px)]">
                                             {/* Decorative Background for legibility when scrolling */}
                                             <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-transparent -z-10 rounded-r-xl" />
 
-                                            <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 shadow-sm">
-                                                <Layers className="w-3.5 h-3.5" />
+                                            {/* Team Logo */}
+                                            <div className="flex items-center justify-center w-7 h-7 rounded-full overflow-hidden shadow-sm border border-slate-200">
+                                                {teamLogo ? (
+                                                    <img
+                                                        src={teamLogo}
+                                                        alt={`${initiativeGroup} team`}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full bg-indigo-50 flex items-center justify-center text-indigo-600 text-xs font-bold">
+                                                        {initiativeGroup?.charAt(0) || '?'}
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="flex items-baseline gap-2">
                                                 <h3 className="text-sm font-bold text-slate-800 tracking-tight">
@@ -400,8 +461,62 @@ const TimelineView = ({ data, onUpdateItem }) => {
 
                                                     const colorClass =
                                                         item.type === 'initiative-planning' ? 'bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200' :
+                                                            item.type === 'release-pre-planning' ? 'bg-cyan-100 text-cyan-700 border-cyan-200 hover:bg-cyan-200' :
                                                             item.type === 'release-planning' ? 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200' :
+                                                            item.type === 'qa-event' ? 'bg-orange-100 text-orange-700 border-orange-300 hover:bg-orange-200' :
                                                                 'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200';
+
+                                                    // Render milestone (icon above with anchor dot on timeline) for QA Event
+                                                    if (item.isMilestone) {
+                                                        return (
+                                                            <div
+                                                                key={item.id}
+                                                                className="absolute h-8 flex items-center group z-20"
+                                                                style={{ left: `${left}px` }}
+                                                            >
+                                                                {/* Container for icon above + connector + anchor */}
+                                                                <div className="relative flex flex-col items-center">
+                                                                    {/* Icon positioned above the timeline */}
+                                                                    <div className="absolute -top-10 left-1/2 -translate-x-1/2">
+                                                                        <div className="relative">
+                                                                            {/* Outer glow ring */}
+                                                                            <div className="absolute inset-0 bg-orange-400/30 rounded-full blur-sm animate-pulse" style={{ width: '28px', height: '28px', margin: '-2px' }} />
+                                                                            {/* Main icon container */}
+                                                                            <div className="w-6 h-6 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg shadow-lg border-2 border-orange-300 flex items-center justify-center transform hover:scale-110 transition-transform cursor-pointer">
+                                                                                {/* Bug icon SVG */}
+                                                                                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-white" fill="currentColor">
+                                                                                    <path d="M12 2C13.1 2 14 2.9 14 4C14 4.1 14 4.2 14 4.3C16.4 5.2 18 7.4 18 10V11H19C19.6 11 20 11.4 20 12S19.6 13 19 13H18V14C18 15.1 17.8 16.2 17.4 17.2L19.5 19.3C19.9 19.7 19.9 20.3 19.5 20.7C19.1 21.1 18.5 21.1 18.1 20.7L16.3 18.9C15.2 19.6 13.7 20 12 20C10.3 20 8.8 19.6 7.7 18.9L5.9 20.7C5.5 21.1 4.9 21.1 4.5 20.7C4.1 20.3 4.1 19.7 4.5 19.3L6.6 17.2C6.2 16.2 6 15.1 6 14V13H5C4.4 13 4 12.6 4 12S4.4 11 5 11H6V10C6 7.4 7.6 5.2 10 4.3C10 4.2 10 4.1 10 4C10 2.9 10.9 2 12 2ZM12 6C9.8 6 8 7.8 8 10V14C8 16.2 9.8 18 12 18C14.2 18 16 16.2 16 14V10C16 7.8 14.2 6 12 6ZM12 8C12.6 8 13 8.4 13 9V11C13 11.6 12.6 12 12 12C11.4 12 11 11.6 11 11V9C11 8.4 11.4 8 12 8Z"/>
+                                                                                </svg>
+                                                                            </div>
+                                                                            {/* Small checkmark badge */}
+                                                                            <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border border-white flex items-center justify-center shadow-sm">
+                                                                                <svg viewBox="0 0 24 24" className="w-1.5 h-1.5 text-white" fill="none" stroke="currentColor" strokeWidth="4">
+                                                                                    <path d="M5 12l5 5L20 7" />
+                                                                                </svg>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Vertical connector line */}
+                                                                    <div className="absolute -top-7 left-1/2 -translate-x-1/2 w-0.5 h-7 bg-gradient-to-b from-orange-400 to-orange-300" />
+
+                                                                    {/* Anchor dot on the timeline */}
+                                                                    <div className="w-3 h-3 bg-orange-500 rounded-full border-2 border-white shadow-md" />
+                                                                </div>
+
+                                                                {/* Tooltip */}
+                                                                <div className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-12 p-3 bg-ss-navy text-white rounded-lg shadow-xl z-[100] w-56 pointer-events-none before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-8 before:border-transparent before:border-t-ss-navy">
+                                                                    <div className="text-xs font-bold mb-2 border-b border-blue-400/30 pb-1 text-center truncate">{item.name}</div>
+                                                                    <div className="flex flex-col gap-2 text-[10px]">
+                                                                        <div className="text-center">
+                                                                            <div className="text-orange-300 font-bold uppercase tracking-tighter opacity-70">QA Event</div>
+                                                                            <div className="font-medium whitespace-nowrap">{format(currentStartDate, 'MMM d, yyyy')}</div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    }
 
                                                     return (
                                                         <div

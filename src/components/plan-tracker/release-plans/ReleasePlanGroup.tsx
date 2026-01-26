@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Calendar, Clock, Layers, FileText, Target, Plus, Link as LinkIcon, Info, Trash2, ExternalLink } from 'lucide-react';
+import { ChevronDown, ChevronRight, Calendar, Layers, FileText, Target, Plus, Link as LinkIcon, Info, Trash2, ExternalLink } from 'lucide-react';
 import { getStatusColor } from '../utils/statusColors';
 import { EpicRow } from './EpicRow';
 
@@ -16,15 +16,16 @@ interface ReleasePlan {
   id: string;
   goal: string;
   status: string;
-  loe: string;
   devs: string;
   devPlan: string;
   reqDoc: string;
+  prePlanningStartDate: string;
+  prePlanningEndDate: string;
   planningStartDate: string;
   planningEndDate: string;
   devStartDate: string;
   devEndDate: string;
-  internalReleaseDate: string;
+  qaEventDate: string;
   externalReleaseDate: string;
   Epics?: Epic[];
 }
@@ -80,8 +81,9 @@ export function ReleasePlanGroup({
                 className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide border-none outline-none cursor-pointer focus:ring-2 ${getStatusColor(plan.status)}`}
               >
                 <option value="Pending">Pending</option>
+                <option value="Pre-Planning">Pre-Planning</option>
                 <option value="Planning">Planning</option>
-                <option value="Dev">Dev</option>
+                <option value="Development">Development</option>
                 <option value="Released">Released</option>
               </select>
               <button
@@ -102,18 +104,7 @@ export function ReleasePlanGroup({
           {/* Header Bottom Row: Metrics Grid & Dates */}
           {isExpanded && (
             <div className="pl-9 space-y-4" onClick={(e) => e.stopPropagation()}>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white dark:bg-slate-700 p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 shadow-sm flex flex-col gap-1">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                    <Clock className="w-3 h-3" /> LOE (Weeks)
-                  </label>
-                  <input
-                    value={plan.loe}
-                    onChange={(e) => updateReleasePlan(planIndex, 'loe', e.target.value)}
-                    className="font-semibold text-slate-700 dark:text-slate-200 w-full outline-none text-sm placeholder:text-slate-300 placeholder:font-normal bg-transparent"
-                    placeholder="e.g. 4"
-                  />
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-white dark:bg-slate-700 p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 shadow-sm flex flex-col gap-1">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                     <Layers className="w-3 h-3" /> Developers
@@ -182,7 +173,33 @@ export function ReleasePlanGroup({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-[1.2fr_1.2fr_1.2fr_0.7fr_0.7fr] gap-4">
+                <div className="bg-cyan-50/30 dark:bg-cyan-900/20 p-3 rounded-lg border border-cyan-100 dark:border-cyan-800 flex flex-col gap-2">
+                  <label className="text-[10px] font-black text-cyan-600 dark:text-cyan-400 uppercase tracking-widest flex items-center gap-1.5">
+                    <Calendar className="w-3 h-3" /> Pre-Planning Phase
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase">Start</span>
+                      <input
+                        type="date"
+                        value={plan.prePlanningStartDate || ''}
+                        onChange={(e) => updateReleasePlan(planIndex, 'prePlanningStartDate', e.target.value)}
+                        className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded px-2 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-cyan-100 transition-all"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase">End</span>
+                      <input
+                        type="date"
+                        value={plan.prePlanningEndDate || ''}
+                        onChange={(e) => updateReleasePlan(planIndex, 'prePlanningEndDate', e.target.value)}
+                        className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded px-2 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-cyan-100 transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="bg-blue-50/30 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800 flex flex-col gap-2">
                   <label className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest flex items-center gap-1.5">
                     <Calendar className="w-3 h-3" /> Release Planning Phase
@@ -235,29 +252,33 @@ export function ReleasePlanGroup({
                   </div>
                 </div>
 
+                <div className="bg-amber-50/30 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-100 dark:border-amber-800 flex flex-col gap-2">
+                  <label className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
+                    <Calendar className="w-3 h-3" /> QA Event
+                  </label>
+                  <div className="flex flex-col gap-1 items-center">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase">Date</span>
+                    <input
+                      type="date"
+                      value={plan.qaEventDate || ''}
+                      onChange={(e) => updateReleasePlan(planIndex, 'qaEventDate', e.target.value)}
+                      className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded px-2 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-amber-100 transition-all"
+                    />
+                  </div>
+                </div>
+
                 <div className="bg-ss-navy/5 dark:bg-slate-700/50 p-3 rounded-lg border border-ss-navy/10 dark:border-slate-600 flex flex-col gap-2">
                   <label className="text-[10px] font-black text-ss-navy dark:text-slate-300 uppercase tracking-widest flex items-center gap-1.5">
-                    <Target className="w-3 h-3" /> Target Release Dates
+                    <Target className="w-3 h-3" /> Target Release
                   </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[9px] font-bold text-slate-400 uppercase">Internal</span>
-                      <input
-                        type="date"
-                        value={plan.internalReleaseDate || ''}
-                        onChange={(e) => updateReleasePlan(planIndex, 'internalReleaseDate', e.target.value)}
-                        className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded px-2 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-ss-navy/10 transition-all"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[9px] font-bold text-slate-400 uppercase">External</span>
-                      <input
-                        type="date"
-                        value={plan.externalReleaseDate || ''}
-                        onChange={(e) => updateReleasePlan(planIndex, 'externalReleaseDate', e.target.value)}
-                        className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded px-2 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-ss-navy/10 transition-all"
-                      />
-                    </div>
+                  <div className="flex flex-col gap-1 items-center">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase">Date</span>
+                    <input
+                      type="date"
+                      value={plan.externalReleaseDate || ''}
+                      onChange={(e) => updateReleasePlan(planIndex, 'externalReleaseDate', e.target.value)}
+                      className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded px-2 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-ss-navy/10 transition-all"
+                    />
                   </div>
                 </div>
               </div>

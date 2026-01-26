@@ -1,10 +1,12 @@
 // Initiative and Release Planning Types
 
 export type InitiativeStatus =
+  | 'Pending'
   | 'Initiative Planning'
   | 'Release Planning'
   | 'Development'
   | 'Released'
+  | 'Post Release'
   | 'On Hold';
 
 export type PlanningStatus =
@@ -14,6 +16,7 @@ export type PlanningStatus =
   | 'Done';
 
 export type ReleaseStatus =
+  | 'Pre-Planning'
   | 'Planning'
   | 'Development'
   | 'Released'
@@ -71,15 +74,16 @@ export interface ReleasePlan {
   initiativeId: string;
   goal: string;
   status: ReleaseStatus;
+  prePlanningStartDate: string | null;
+  prePlanningEndDate: string | null;
   planningStartDate: string | null;
   planningEndDate: string | null;
   devStartDate: string | null;
   devEndDate: string | null;
-  loe: string | null;
   devs: string | null;
   kpi: string | null;
   reqDoc: string | null;
-  internalReleaseDate: string | null;
+  qaEventDate: string | null;
   externalReleaseDate: string | null;
   orderIndex: number;
   epics: Epic[];
@@ -129,6 +133,8 @@ export interface TimelineInitiative {
     id: string;
     goal: string;
     status: ReleaseStatus;
+    prePlanningStartDate: string | null;
+    prePlanningEndDate: string | null;
     planningStartDate: string | null;
     planningEndDate: string | null;
     devStartDate: string | null;

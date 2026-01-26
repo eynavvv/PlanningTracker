@@ -153,13 +153,17 @@ export function SortableInitiativeRow({
             value={init.status}
             onChange={(e) => handleFieldChange(init.id, 'status', e.target.value)}
             className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider w-full text-center border-none focus:ring-2 focus:ring-blue-400 outline-none transition-all ${
-              init.status === 'Initiative Planning'
-                ? 'bg-blue-50 text-blue-600 border border-blue-100 dark:bg-blue-900/30 dark:text-blue-400'
+              init.status === 'Pending'
+                ? 'bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-700 dark:text-slate-300'
+                : init.status === 'Initiative Planning'
+                ? 'bg-sky-50 text-sky-600 border border-sky-100 dark:bg-sky-900/30 dark:text-sky-400'
                 : init.status === 'Release Planning'
-                ? 'bg-purple-50 text-purple-600 border border-purple-100 dark:bg-purple-900/30 dark:text-purple-400'
+                ? 'bg-violet-50 text-violet-600 border border-violet-100 dark:bg-violet-900/30 dark:text-violet-400'
                 : init.status === 'Development'
                 ? 'bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-900/30 dark:text-amber-400'
                 : init.status === 'Released'
+                ? 'bg-green-50 text-green-600 border border-green-100 dark:bg-green-900/30 dark:text-green-400'
+                : init.status === 'Post Release'
                 ? 'bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400'
                 : 'bg-slate-50 text-slate-600 border border-slate-100 dark:bg-slate-700 dark:text-slate-300'
             }`}
@@ -241,12 +245,16 @@ export function SortableInitiativeRow({
                 value={rp.status}
                 onChange={(e) => handleReleasePhaseChange(init.id, rp.id, e.target.value)}
                 className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider w-full text-center border focus:ring-2 focus:ring-blue-400 outline-none transition-all ${
-                  rp.status === 'Planning'
-                    ? 'bg-purple-50 text-purple-600 border-purple-100 dark:bg-purple-900/30 dark:text-purple-400'
+                  rp.status === 'Pending'
+                    ? 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-700 dark:text-slate-300'
+                    : rp.status === 'Pre-Planning'
+                    ? 'bg-cyan-50 text-cyan-600 border-cyan-100 dark:bg-cyan-900/30 dark:text-cyan-400'
+                    : rp.status === 'Planning'
+                    ? 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/30 dark:text-blue-400'
                     : rp.status === 'Development'
                     ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/30 dark:text-amber-400'
                     : rp.status === 'Released'
-                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400'
+                    ? 'bg-green-50 text-green-600 border-green-100 dark:bg-green-900/30 dark:text-green-400'
                     : 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-700 dark:text-slate-300'
                 }`}
               >

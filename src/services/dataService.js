@@ -66,7 +66,7 @@ class DataService {
             // Fetch all release plans
             const { data: releasePlans, error: rpError } = await supabase
                 .from('release_plans')
-                .select('id, initiative_id, goal, planning_start_date, planning_end_date, dev_start_date, dev_end_date, status');
+                .select('id, initiative_id, goal, pre_planning_start_date, pre_planning_end_date, planning_start_date, planning_end_date, dev_start_date, dev_end_date, qa_event_date, status');
 
             if (rpError) throw rpError;
 
@@ -142,16 +142,17 @@ class DataService {
             const releasePlans = plans.map(plan => ({
                 id: plan.id,
                 goal: plan.goal || '',
+                prePlanningStartDate: plan.pre_planning_start_date || '',
+                prePlanningEndDate: plan.pre_planning_end_date || '',
                 planningStartDate: plan.planning_start_date || '',
                 planningEndDate: plan.planning_end_date || '',
                 devStartDate: plan.dev_start_date || '',
                 devEndDate: plan.dev_end_date || '',
                 status: plan.status || '',
-                loe: plan.loe || '',
                 reqDoc: plan.req_doc || '',
                 devs: plan.devs || '',
                 devPlan: plan.kpi || '',
-                internalReleaseDate: plan.internal_release_date || '',
+                qaEventDate: plan.qa_event_date || '',
                 externalReleaseDate: plan.external_release_date || '',
                 Epics: epics.filter(e => e.release_plan_id === plan.id).map(e => ({
                     id: e.id,
@@ -372,6 +373,14 @@ class DataService {
     async updateReleasePlan(initiativeId, planId, updates) {
         try {
             const dbUpdates = { ...updates };
+            if (dbUpdates.prePlanningStartDate !== undefined) {
+                dbUpdates.pre_planning_start_date = dbUpdates.prePlanningStartDate;
+                delete dbUpdates.prePlanningStartDate;
+            }
+            if (dbUpdates.prePlanningEndDate !== undefined) {
+                dbUpdates.pre_planning_end_date = dbUpdates.prePlanningEndDate;
+                delete dbUpdates.prePlanningEndDate;
+            }
             if (dbUpdates.planningStartDate) {
                 dbUpdates.planning_start_date = dbUpdates.planningStartDate;
                 delete dbUpdates.planningStartDate;
@@ -392,9 +401,9 @@ class DataService {
                 dbUpdates.req_doc = dbUpdates.reqDoc;
                 delete dbUpdates.reqDoc;
             }
-            if (dbUpdates.internalReleaseDate) {
-                dbUpdates.internal_release_date = dbUpdates.internalReleaseDate;
-                delete dbUpdates.internalReleaseDate;
+            if (dbUpdates.qaEventDate !== undefined) {
+                dbUpdates.qa_event_date = dbUpdates.qaEventDate;
+                delete dbUpdates.qaEventDate;
             }
             if (dbUpdates.externalReleaseDate) {
                 dbUpdates.external_release_date = dbUpdates.externalReleaseDate;

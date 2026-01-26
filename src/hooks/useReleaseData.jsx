@@ -211,20 +211,20 @@ export function ReleaseProvider({ children, planId }) {
         const newIndex = data.Initiative.ReleasePlan.length;
         const newId = (newIndex + 1).toString();
 
-        const today = new Date().toISOString().split('T')[0];
         const newPlan = {
             id: newId,
             goal: name,
-            status: 'Planning',
-            planningStartDate: today,
-            planningEndDate: today,
-            devStartDate: today,
-            devEndDate: today,
-            loe: '',
+            status: 'Pending',
+            prePlanningStartDate: '',
+            prePlanningEndDate: '',
+            planningStartDate: '',
+            planningEndDate: '',
+            devStartDate: '',
+            devEndDate: '',
             reqDoc: '',
             devs: '',
             devPlan: '',
-            internalReleaseDate: '',
+            qaEventDate: '',
             externalReleaseDate: '',
             Epics: []
         };

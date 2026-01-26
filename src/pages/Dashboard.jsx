@@ -247,6 +247,11 @@ const Dashboard = () => {
                     StartDate: startDateStr,
                     PlannedEndDate: endDateStr
                 });
+            } else if (item.type === 'release-pre-planning') {
+                await dataService.updateReleasePlan(item.initiativeId, item.releaseId, {
+                    prePlanningStartDate: startDateStr,
+                    prePlanningEndDate: endDateStr
+                });
             } else if (item.type === 'release-planning') {
                 await dataService.updateReleasePlan(item.initiativeId, item.releaseId, {
                     planningStartDate: startDateStr,
@@ -275,7 +280,9 @@ const Dashboard = () => {
                             ...init,
                             releasePlans: init.releasePlans.map(rp => {
                                 if (rp.id === item.releaseId) {
-                                    if (item.type === 'release-planning') {
+                                    if (item.type === 'release-pre-planning') {
+                                        return { ...rp, pre_planning_start_date: startDateStr, pre_planning_end_date: endDateStr };
+                                    } else if (item.type === 'release-planning') {
                                         return { ...rp, planning_start_date: startDateStr, planning_end_date: endDateStr };
                                     } else {
                                         return { ...rp, dev_start_date: startDateStr, dev_end_date: endDateStr };
