@@ -50,7 +50,8 @@ const TimelineView = ({ data, onUpdateItem }) => {
                     initiativeId: initiative.id,
                     group: initiative.group,
                     detailedStatus: initiative.detailedStatus,
-                    overallStatus: initiative.status
+                    overallStatus: initiative.status,
+                    deliverables: initiative.deliverables
                 });
             }
 
@@ -70,7 +71,8 @@ const TimelineView = ({ data, onUpdateItem }) => {
                         group: initiative.group,
                         releaseId: rp.id,
                         detailedStatus: initiative.detailedStatus,
-                        overallStatus: initiative.status
+                        overallStatus: initiative.status,
+                        deliverables: initiative.deliverables
                     });
                 }
 
@@ -88,7 +90,8 @@ const TimelineView = ({ data, onUpdateItem }) => {
                         group: initiative.group,
                         releaseId: rp.id,
                         detailedStatus: initiative.detailedStatus,
-                        overallStatus: initiative.status
+                        overallStatus: initiative.status,
+                        deliverables: initiative.deliverables
                     });
                 }
 
@@ -106,7 +109,8 @@ const TimelineView = ({ data, onUpdateItem }) => {
                         group: initiative.group,
                         releaseId: rp.id,
                         detailedStatus: initiative.detailedStatus,
-                        overallStatus: initiative.status
+                        overallStatus: initiative.status,
+                        deliverables: initiative.deliverables
                     });
                 }
 
@@ -125,7 +129,8 @@ const TimelineView = ({ data, onUpdateItem }) => {
                         group: initiative.group,
                         releaseId: rp.id,
                         detailedStatus: initiative.detailedStatus,
-                        overallStatus: initiative.status
+                        overallStatus: initiative.status,
+                        deliverables: initiative.deliverables
                     });
                 }
             });
@@ -462,9 +467,9 @@ const TimelineView = ({ data, onUpdateItem }) => {
                                                     const colorClass =
                                                         item.type === 'initiative-planning' ? 'bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200' :
                                                             item.type === 'release-pre-planning' ? 'bg-cyan-100 text-cyan-700 border-cyan-200 hover:bg-cyan-200' :
-                                                            item.type === 'release-planning' ? 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200' :
-                                                            item.type === 'qa-event' ? 'bg-orange-100 text-orange-700 border-orange-300 hover:bg-orange-200' :
-                                                                'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200';
+                                                                item.type === 'release-planning' ? 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200' :
+                                                                    item.type === 'qa-event' ? 'bg-orange-100 text-orange-700 border-orange-300 hover:bg-orange-200' :
+                                                                        'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200';
 
                                                     // Render milestone (icon above with anchor dot on timeline) for QA Event
                                                     if (item.isMilestone) {
@@ -485,7 +490,7 @@ const TimelineView = ({ data, onUpdateItem }) => {
                                                                             <div className="w-6 h-6 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg shadow-lg border-2 border-orange-300 flex items-center justify-center transform hover:scale-110 transition-transform cursor-pointer">
                                                                                 {/* Bug icon SVG */}
                                                                                 <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-white" fill="currentColor">
-                                                                                    <path d="M12 2C13.1 2 14 2.9 14 4C14 4.1 14 4.2 14 4.3C16.4 5.2 18 7.4 18 10V11H19C19.6 11 20 11.4 20 12S19.6 13 19 13H18V14C18 15.1 17.8 16.2 17.4 17.2L19.5 19.3C19.9 19.7 19.9 20.3 19.5 20.7C19.1 21.1 18.5 21.1 18.1 20.7L16.3 18.9C15.2 19.6 13.7 20 12 20C10.3 20 8.8 19.6 7.7 18.9L5.9 20.7C5.5 21.1 4.9 21.1 4.5 20.7C4.1 20.3 4.1 19.7 4.5 19.3L6.6 17.2C6.2 16.2 6 15.1 6 14V13H5C4.4 13 4 12.6 4 12S4.4 11 5 11H6V10C6 7.4 7.6 5.2 10 4.3C10 4.2 10 4.1 10 4C10 2.9 10.9 2 12 2ZM12 6C9.8 6 8 7.8 8 10V14C8 16.2 9.8 18 12 18C14.2 18 16 16.2 16 14V10C16 7.8 14.2 6 12 6ZM12 8C12.6 8 13 8.4 13 9V11C13 11.6 12.6 12 12 12C11.4 12 11 11.6 11 11V9C11 8.4 11.4 8 12 8Z"/>
+                                                                                    <path d="M12 2C13.1 2 14 2.9 14 4C14 4.1 14 4.2 14 4.3C16.4 5.2 18 7.4 18 10V11H19C19.6 11 20 11.4 20 12S19.6 13 19 13H18V14C18 15.1 17.8 16.2 17.4 17.2L19.5 19.3C19.9 19.7 19.9 20.3 19.5 20.7C19.1 21.1 18.5 21.1 18.1 20.7L16.3 18.9C15.2 19.6 13.7 20 12 20C10.3 20 8.8 19.6 7.7 18.9L5.9 20.7C5.5 21.1 4.9 21.1 4.5 20.7C4.1 20.3 4.1 19.7 4.5 19.3L6.6 17.2C6.2 16.2 6 15.1 6 14V13H5C4.4 13 4 12.6 4 12S4.4 11 5 11H6V10C6 7.4 7.6 5.2 10 4.3C10 4.2 10 4.1 10 4C10 2.9 10.9 2 12 2ZM12 6C9.8 6 8 7.8 8 10V14C8 16.2 9.8 18 12 18C14.2 18 16 16.2 16 14V10C16 7.8 14.2 6 12 6ZM12 8C12.6 8 13 8.4 13 9V11C13 11.6 12.6 12 12 12C11.4 12 11 11.6 11 11V9C11 8.4 11.4 8 12 8Z" />
                                                                                 </svg>
                                                                             </div>
                                                                             {/* Small checkmark badge */}
@@ -531,9 +536,25 @@ const TimelineView = ({ data, onUpdateItem }) => {
                                                                 className="absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-black/10 rounded-l-lg transition-colors z-20"
                                                             />
 
-                                                            <span className="truncate pointer-events-none select-none w-full text-center">
+                                                            <span className="truncate pointer-events-none select-none w-full text-center relative z-10">
                                                                 {item.name} <span className="opacity-60 font-medium text-[9px]">({item.phase})</span>
                                                             </span>
+
+                                                            {item.type === 'release-dev' && (
+                                                                <div className="absolute inset-0 flex items-center pointer-events-none overflow-hidden pr-2">
+                                                                    {Array.from({ length: Math.ceil((differenceInDays(currentEndDate, currentStartDate) + 1) / 7) }).map((_, i) => (
+                                                                        <div
+                                                                            key={i}
+                                                                            className="flex-none h-full flex items-end pb-0.5 border-l border-current/10 first:border-l-0"
+                                                                            style={{ width: `${dayWidth * 7}px` }}
+                                                                        >
+                                                                            <span className="text-[7px] font-black pl-1 opacity-30 uppercase tracking-tighter">
+                                                                                W{i + 1}
+                                                                            </span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
 
                                                             {/* Right Resize Handle */}
                                                             <div
@@ -542,42 +563,55 @@ const TimelineView = ({ data, onUpdateItem }) => {
                                                             />
 
                                                             {/* Tooltip */}
-                                                            <div className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-3 bg-ss-navy text-white rounded-lg shadow-xl z-[100] w-72 pointer-events-none before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-8 before:border-transparent before:border-t-ss-navy">
+                                                            <div className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-4 p-3 bg-ss-navy text-white rounded-lg shadow-2xl z-[500] w-72 pointer-events-none before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-8 before:border-transparent before:border-t-ss-navy">
                                                                 <div className="text-xs font-bold mb-2 border-b border-blue-400/30 pb-1 text-center truncate">{item.name}</div>
-                                                                <div className="flex flex-col gap-2 text-[10px]">
-                                                                    <div className="grid grid-cols-2 gap-2 border-b border-blue-400/10 pb-2">
-                                                                        <div>
-                                                                            <div className="text-blue-300 font-bold uppercase tracking-tighter opacity-70">Phase</div>
-                                                                            <div className="font-medium">{item.phase}</div>
+                                                                <div className="flex flex-col gap-2.5 text-[10px]">
+                                                                    <div className="flex items-center justify-between bg-blue-900/40 px-2 py-1 rounded border border-blue-400/10 text-[9px]">
+                                                                        <div className="flex gap-1 items-center">
+                                                                            <span className="text-blue-300 opacity-50 uppercase font-bold tracking-tight text-[8px]">Start</span>
+                                                                            <span className="font-bold">{format(currentStartDate, 'MMM d, yyyy')}</span>
                                                                         </div>
-                                                                        <div>
-                                                                            <div className="text-blue-300 font-bold uppercase tracking-tighter opacity-70">Status</div>
-                                                                            <div className="font-medium truncate">{item.overallStatus || 'N/A'}</div>
+                                                                        <div className="flex gap-1 items-center ml-auto">
+                                                                            <span className="text-blue-300 opacity-50 uppercase font-bold tracking-tight text-[8px]">End</span>
+                                                                            <span className="font-bold">{format(currentEndDate, 'MMM d, yyyy')}</span>
                                                                         </div>
                                                                     </div>
 
-                                                                    <div className="grid grid-cols-2 gap-2">
-                                                                        <div>
-                                                                            <div className="text-blue-300 font-bold uppercase tracking-tighter opacity-70">Start Date</div>
-                                                                            <div className="font-medium whitespace-nowrap">{format(currentStartDate, 'MMM d, yyyy')}</div>
+                                                                    {item.detailedStatus && (
+                                                                        <div className="space-y-1">
+                                                                            <div className="text-blue-300 text-[8px] uppercase tracking-widest font-black opacity-80 text-center">Current Focus</div>
+                                                                            <div className="text-[10px] italic text-blue-50 leading-relaxed bg-blue-900/40 p-2 rounded-lg border border-blue-400/10 text-left">
+                                                                                "{item.detailedStatus}"
+                                                                            </div>
                                                                         </div>
-                                                                        <div>
-                                                                            <div className="text-blue-300 font-bold uppercase tracking-tighter opacity-70">End Date</div>
-                                                                            <div className="font-medium whitespace-nowrap">{format(currentEndDate, 'MMM d, yyyy')}</div>
+                                                                    )}
+
+                                                                    {item.deliverables && item.deliverables.filter(d => d.status !== 'done').length > 0 && (
+                                                                        <div className="space-y-1">
+                                                                            <div className="flex justify-between items-center relative">
+                                                                                <div className="text-emerald-400 text-[8px] uppercase tracking-widest font-black opacity-80 w-full text-center">Next Deliverables</div>
+                                                                                <div className="text-[8px] text-emerald-400/60 font-bold uppercase absolute right-0">[{item.deliverables.filter(d => d.status !== 'done').length}]</div>
+                                                                            </div>
+                                                                            <div className="space-y-1">
+                                                                                {item.deliverables
+                                                                                    .filter(d => d.status !== 'done')
+                                                                                    .slice(0, 5)
+                                                                                    .map((d, i) => (
+                                                                                        <div key={i} className="text-[9px] bg-white/5 p-1.5 rounded border border-white/10 flex justify-between items-center gap-2">
+                                                                                            <span className="truncate flex-1 font-medium text-left">{d.name}</span>
+                                                                                            {d.date && (
+                                                                                                <span className="text-[8px] text-blue-300 font-bold whitespace-nowrap bg-blue-900/40 px-1 py-0.5 rounded border border-blue-400/20">
+                                                                                                    {format(new Date(d.date), 'MMM d')}
+                                                                                                </span>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    ))}
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
+                                                                    )}
                                                                 </div>
 
-                                                                {item.detailedStatus && (
-                                                                    <div className="mt-2 pt-2 border-t border-blue-400/20">
-                                                                        <div className="text-blue-300 text-[9px] uppercase tracking-widest font-black mb-1 opacity-80">Current Focus</div>
-                                                                        <div className="text-[10px] italic text-blue-50 leading-relaxed bg-blue-900/40 p-2 rounded-lg border border-blue-400/10">
-                                                                            "{item.detailedStatus}"
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-
-                                                                <div className="mt-2 pt-2 border-t border-blue-400/20 text-[8px] text-blue-300 uppercase tracking-widest font-black text-center opacity-40">
+                                                                <div className="mt-3 pt-2 border-t border-blue-400/20 text-[8px] text-blue-300 uppercase tracking-widest font-black text-center opacity-40">
                                                                     DRAG TO MOVE • EDGES TO RESIZE
                                                                 </div>
                                                             </div>

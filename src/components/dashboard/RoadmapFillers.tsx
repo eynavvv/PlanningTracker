@@ -321,7 +321,7 @@ export function RoadmapFillers({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
       {/* Collapsible Header */}
       <button
         onClick={onToggleCollapse}

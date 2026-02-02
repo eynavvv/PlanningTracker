@@ -70,6 +70,14 @@ class DataService {
 
             if (rpError) throw rpError;
 
+            // Fetch all deliverables
+            const { data: deliverables, error: delError } = await supabase
+                .from('deliverables')
+                .select('*')
+                .order('date', { ascending: true });
+
+            if (delError) throw delError;
+
             // Group and map data by initiative
             return initiatives.map(init => ({
                 id: init.id,
@@ -82,7 +90,13 @@ class DataService {
                 developers: init.developers || [],
                 detailedStatus: init.detailed_status || '',
                 initialPlanning: initialPlanning.find(ip => ip.initiative_id === init.id),
-                releasePlans: releasePlans.filter(rp => rp.initiative_id === init.id)
+                releasePlans: releasePlans.filter(rp => rp.initiative_id === init.id),
+                deliverables: deliverables?.filter(d => d.initiative_id === init.id).map(d => ({
+                    id: d.id,
+                    name: d.name,
+                    date: d.date,
+                    status: d.status || 'pending'
+                })) || []
             }));
         } catch (error) {
             console.error('Error fetching timeline data:', error);
@@ -290,6 +304,8 @@ class DataService {
             if ('group' in updates) dbUpdates.group = updates.group;
             if ('developers' in updates) dbUpdates.developers = updates.developers;
             if ('detailedStatus' in updates) dbUpdates.detailed_status = updates.detailedStatus;
+            if ('name' in updates) dbUpdates.name = updates.name;
+            if ('Name' in updates) dbUpdates.name = updates.Name;
 
             const { error } = await supabase
                 .from('initiatives')

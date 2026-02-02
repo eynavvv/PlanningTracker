@@ -14,6 +14,13 @@ interface ReleasePlan {
   dev_end_date?: string;
 }
 
+interface Deliverable {
+  id: string;
+  name: string;
+  date?: string;
+  status: string;
+}
+
 interface InitialPlanning {
   planned_end_date?: string;
 }
@@ -30,6 +37,7 @@ interface Initiative {
   detailedStatus?: string;
   releasePlans?: ReleasePlan[];
   initialPlanning?: InitialPlanning;
+  deliverables?: Deliverable[];
 }
 
 // Helper function to get the target date based on initiative phase
@@ -79,6 +87,7 @@ export function SortableInitiativeRow({
   GROUP_OPTIONS,
 }: SortableInitiativeRowProps) {
   const [isExpanded, setIsExpanded] = React.useState(false);
+  const [isHovered, setIsHovered] = React.useState(false);
   const {
     attributes,
     listeners,
@@ -91,7 +100,7 @@ export function SortableInitiativeRow({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    zIndex: isDragging ? 50 : 'auto' as const,
+    zIndex: isDragging ? 1000 : (isHovered ? 500 : undefined),
     position: 'relative' as const,
   };
 
@@ -100,7 +109,9 @@ export function SortableInitiativeRow({
       <tr
         ref={setNodeRef}
         style={style}
-        className={`hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${isDragging ? 'bg-white dark:bg-slate-800 shadow-lg opacity-80' : ''}`}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        className={`hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${isDragging ? 'bg-white dark:bg-slate-800 shadow-lg opacity-80' : 'relative z-0'}`}
       >
         <td className="w-10 px-4">
           <button
@@ -136,13 +147,42 @@ export function SortableInitiativeRow({
                 {init.name}
               </Link>
 
-              {init.detailedStatus && (
-                <div className="invisible group-hover:visible absolute bottom-full left-0 mb-2 p-3 bg-ss-navy text-white rounded-lg shadow-xl z-[100] w-72 pointer-events-none before:content-[''] before:absolute before:top-full before:left-6 before:border-8 before:border-transparent before:border-t-ss-navy">
+              {(init.detailedStatus || (init.deliverables && init.deliverables.some(d => d.status !== 'done'))) && (
+                <div className="invisible group-hover:visible absolute top-full left-0 mt-3 p-3 bg-ss-navy text-white rounded-lg shadow-2xl z-[1000] w-72 pointer-events-none before:content-[''] before:absolute before:bottom-full before:left-6 before:border-8 before:border-transparent before:border-b-ss-navy">
                   <div className="text-xs font-bold mb-2 border-b border-blue-400/30 pb-1 text-center truncate">{init.name}</div>
-                  <div className="text-blue-300 text-[9px] uppercase tracking-widest font-black mb-1 opacity-80">Current Focus</div>
-                  <div className="text-[10px] italic text-blue-50 leading-relaxed bg-blue-900/40 p-2 rounded-lg border border-blue-400/10">
-                    "{init.detailedStatus}"
-                  </div>
+
+                  {init.detailedStatus && (
+                    <div className="mb-3 last:mb-0">
+                      <div className="text-blue-300 text-[9px] uppercase tracking-widest font-black mb-1 opacity-80 text-center">Current Focus</div>
+                      <div className="text-[10px] italic text-blue-50 leading-relaxed bg-blue-900/40 p-2 rounded-lg border border-blue-400/10 mb-2 text-left">
+                        "{init.detailedStatus}"
+                      </div>
+                    </div>
+                  )}
+
+                  {init.deliverables && init.deliverables.filter(d => d.status !== 'done').length > 0 && (
+                    <div>
+                      <div className="relative mb-1">
+                        <div className="text-emerald-400 text-[9px] uppercase tracking-widest font-black opacity-80 text-center">Next Deliverables</div>
+                        <div className="text-[9px] text-emerald-400/60 font-bold uppercase absolute right-0 top-0">[{init.deliverables.filter(d => d.status !== 'done').length}]</div>
+                      </div>
+                      <div className="space-y-1.5">
+                        {init.deliverables
+                          .filter(d => d.status !== 'done')
+                          .slice(0, 3)
+                          .map((d, i) => (
+                            <div key={i} className="text-[10px] bg-white/5 p-1.5 rounded border border-white/10 flex justify-between items-center gap-2">
+                              <span className="truncate flex-1 font-medium text-left">{d.name}</span>
+                              {d.date && (
+                                <span className="text-[9px] text-blue-300 font-bold whitespace-nowrap bg-blue-900/40 px-1 py-0.5 rounded border border-blue-400/20">
+                                  {format(new Date(d.date), 'MMM d')}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -152,21 +192,20 @@ export function SortableInitiativeRow({
           <select
             value={init.status}
             onChange={(e) => handleFieldChange(init.id, 'status', e.target.value)}
-            className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider w-full text-center border-none focus:ring-2 focus:ring-blue-400 outline-none transition-all ${
-              init.status === 'Pending'
-                ? 'bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-700 dark:text-slate-300'
-                : init.status === 'Initiative Planning'
+            className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider w-full text-center border-none focus:ring-2 focus:ring-blue-400 outline-none transition-all ${init.status === 'Pending'
+              ? 'bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-700 dark:text-slate-300'
+              : init.status === 'Initiative Planning'
                 ? 'bg-sky-50 text-sky-600 border border-sky-100 dark:bg-sky-900/30 dark:text-sky-400'
                 : init.status === 'Release Planning'
-                ? 'bg-violet-50 text-violet-600 border border-violet-100 dark:bg-violet-900/30 dark:text-violet-400'
-                : init.status === 'Development'
-                ? 'bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-900/30 dark:text-amber-400'
-                : init.status === 'Released'
-                ? 'bg-green-50 text-green-600 border border-green-100 dark:bg-green-900/30 dark:text-green-400'
-                : init.status === 'Post Release'
-                ? 'bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400'
-                : 'bg-slate-50 text-slate-600 border border-slate-100 dark:bg-slate-700 dark:text-slate-300'
-            }`}
+                  ? 'bg-violet-50 text-violet-600 border border-violet-100 dark:bg-violet-900/30 dark:text-violet-400'
+                  : init.status === 'Development'
+                    ? 'bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-900/30 dark:text-amber-400'
+                    : init.status === 'Released'
+                      ? 'bg-green-50 text-green-600 border border-green-100 dark:bg-green-900/30 dark:text-green-400'
+                      : init.status === 'Post Release'
+                        ? 'bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400'
+                        : 'bg-slate-50 text-slate-600 border border-slate-100 dark:bg-slate-700 dark:text-slate-300'
+              }`}
           >
             {STATUS_OPTIONS.map((opt) => (
               <option key={opt} value={opt}>
@@ -244,19 +283,18 @@ export function SortableInitiativeRow({
               <select
                 value={rp.status}
                 onChange={(e) => handleReleasePhaseChange(init.id, rp.id, e.target.value)}
-                className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider w-full text-center border focus:ring-2 focus:ring-blue-400 outline-none transition-all ${
-                  rp.status === 'Pending'
-                    ? 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-700 dark:text-slate-300'
-                    : rp.status === 'Pre-Planning'
+                className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider w-full text-center border focus:ring-2 focus:ring-blue-400 outline-none transition-all ${rp.status === 'Pending'
+                  ? 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-700 dark:text-slate-300'
+                  : rp.status === 'Pre-Planning'
                     ? 'bg-cyan-50 text-cyan-600 border-cyan-100 dark:bg-cyan-900/30 dark:text-cyan-400'
                     : rp.status === 'Planning'
-                    ? 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/30 dark:text-blue-400'
-                    : rp.status === 'Development'
-                    ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/30 dark:text-amber-400'
-                    : rp.status === 'Released'
-                    ? 'bg-green-50 text-green-600 border-green-100 dark:bg-green-900/30 dark:text-green-400'
-                    : 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-700 dark:text-slate-300'
-                }`}
+                      ? 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/30 dark:text-blue-400'
+                      : rp.status === 'Development'
+                        ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/30 dark:text-amber-400'
+                        : rp.status === 'Released'
+                          ? 'bg-green-50 text-green-600 border-green-100 dark:bg-green-900/30 dark:text-green-400'
+                          : 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-700 dark:text-slate-300'
+                  }`}
               >
                 {RELEASE_STATUS_OPTIONS.map((opt) => (
                   <option key={opt} value={opt}>

@@ -353,7 +353,7 @@ const Dashboard = () => {
             )}
 
             {/* Initiatives Section */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm relative z-10">
                 {/* Collapsible Header */}
                 <button
                     onClick={() => setIsInitiativesCollapsed(!isInitiativesCollapsed)}
@@ -380,7 +380,7 @@ const Dashboard = () => {
                             collisionDetection={closestCenter}
                             onDragEnd={handleDragEnd}
                         >
-                            <div className="overflow-x-auto">
+                            <div>
                                 <table className="w-full text-left text-sm">
                                     <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                                         <tr>

@@ -29,19 +29,18 @@ const InitiativeLiveStatus = () => {
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
             <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="w-full bg-ss-navy px-6 py-3 flex justify-between items-center text-white hover:bg-ss-navy/95 transition-colors"
+                className="w-full px-6 py-3 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
             >
-                <div className="flex items-center gap-2">
-                    <Target className="w-5 h-5 text-blue-400" />
-                    <h2 className="font-bold text-lg lowercase first-letter:uppercase text-slate-100">Initiative Live Status</h2>
-                    <span className="text-ss-action text-[10px] font-black ml-2 bg-blue-50/10 px-2 py-0.5 rounded border border-blue-400/20 uppercase tracking-tighter">WEEKLY SYNC VIEW</span>
+                <div className="flex items-center gap-3">
+                    <Target className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <h2 className="font-bold text-slate-800 dark:text-slate-100">Initiative Live Status</h2>
+                    <span className="text-[10px] bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold px-2 py-0.5 rounded uppercase tracking-wider">
+                        WEEKLY SYNC VIEW
+                    </span>
                 </div>
-                <div className="flex items-center gap-6">
-                    <div className="hidden md:flex items-center gap-2 text-xs text-blue-200 uppercase tracking-widest font-bold">
-                        <Clock className="w-3 h-3" />
-                        Updated: {new Date().toLocaleDateString()}
-                    </div>
-                    {isExpanded ? <ChevronUp className="w-5 h-5 text-blue-400" /> : <ChevronDown className="w-5 h-5 text-blue-400" />}
+                <div className="flex items-center gap-2 text-slate-400">
+                    <span className="text-xs font-medium">{isExpanded ? 'Collapse' : 'Expand'}</span>
+                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </div>
             </button>
 
@@ -206,10 +205,10 @@ const InitiativeLiveStatus = () => {
                                             <div className="w-10 flex justify-center">
                                                 <button
                                                     onClick={() => deleteDeliverable(del.id)}
-                                                    className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                                    className="p-2 text-slate-300 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                                                     title="Delete"
                                                 >
-                                                    <Trash2 className="w-5 h-5" />
+                                                    <Trash2 className="w-4 h-4" />
                                                 </button>
                                             </div>
                                         </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Calendar, Layers, FileText, Target, Plus, Link as LinkIcon, Info, Trash2, ExternalLink } from 'lucide-react';
+import { ChevronDown, ChevronRight, Calendar, Layers, FileText, Target, Plus, Link as LinkIcon, Info, Trash2, ExternalLink, X } from 'lucide-react';
 import { getStatusColor } from '../utils/statusColors';
 import { EpicRow } from './EpicRow';
 
@@ -51,6 +51,7 @@ export function ReleasePlanGroup({
 }: ReleasePlanGroupProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [showIframe, setShowIframe] = useState(true);
+  const [showReqDocIframe, setShowReqDocIframe] = useState(false);
 
   return (
     <div id={`release-${plan.id}`} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden mb-8 scroll-mt-24">
@@ -140,7 +141,7 @@ export function ReleasePlanGroup({
                           e.stopPropagation();
                           setShowIframe(!showIframe);
                         }}
-                        className={`p-1 rounded transition-colors ${showIframe ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/30' : 'text-slate-400 hover:text-blue-600'}`}
+                        className={`p-1.5 rounded-lg transition-colors ${showIframe ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/30' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                         title="Toggle Live Preview"
                       >
                         <Layers className="w-3.5 h-3.5" />
@@ -160,10 +161,30 @@ export function ReleasePlanGroup({
                   <div className="flex items-center gap-2">
                     <input
                       value={plan.reqDoc}
-                      onChange={(e) => updateReleasePlan(planIndex, 'reqDoc', e.target.value)}
+                      onChange={(e) => {
+                        let val = e.target.value;
+                        // Extract src from iframe tag if pasted
+                        if (val.includes('<iframe') && val.includes('src=')) {
+                          const match = val.match(/src=['"]([^'"]+)['"]/);
+                          if (match && match[1]) val = match[1];
+                        }
+                        updateReleasePlan(planIndex, 'reqDoc', val);
+                      }}
                       className="font-semibold text-blue-600 w-full outline-none text-sm placeholder:text-slate-300 placeholder:font-normal truncate bg-transparent"
-                      placeholder="Paste Link..."
+                      placeholder="Paste Link or iframe..."
                     />
+                    {plan.reqDoc && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowReqDocIframe(!showReqDocIframe);
+                        }}
+                        className={`p-1.5 rounded-lg transition-colors ${showReqDocIframe ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/30' : 'text-slate-400 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                        title="Toggle Document Preview"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                     {plan.reqDoc && (
                       <a href={plan.reqDoc} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-blue-600">
                         <LinkIcon className="w-3 h-3" />
@@ -294,9 +315,9 @@ export function ReleasePlanGroup({
                 </span>
                 <button
                   onClick={() => setShowIframe(false)}
-                  className="p-1.5 rounded-lg transition-colors text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50"
+                  className="p-1.5 rounded-lg transition-colors text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
                 >
-                  <Plus className="w-4 h-4 rotate-45" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
               <div className="relative w-full aspect-video min-h-[500px]">
@@ -338,6 +359,91 @@ export function ReleasePlanGroup({
                     loading="lazy"
                   ></iframe>
                 )}
+              </div>
+            </div>
+          )}
+
+          {isExpanded && showReqDocIframe && plan.reqDoc && (
+            <div className="mx-6 mb-6 mt-2 rounded-xl border border-slate-200 dark:border-slate-600 overflow-hidden bg-slate-100 dark:bg-slate-900 shadow-inner" onClick={(e) => e.stopPropagation()}>
+              <div className="bg-white dark:bg-slate-800 px-4 py-2 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                  <FileText className="w-3 h-3 text-emerald-600" />
+                  Requirements Document Preview
+                </span>
+                <button
+                  onClick={() => setShowReqDocIframe(false)}
+                  className="p-1.5 rounded-lg transition-colors text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="relative w-full min-h-[600px]">
+                {(() => {
+                  // Check if it's an embeddable URL (Google Docs, Notion, Zoom, etc.)
+                  const isGoogleDoc = plan.reqDoc.includes('docs.google.com') || plan.reqDoc.includes('drive.google.com');
+                  const isNotion = plan.reqDoc.includes('notion.so') || plan.reqDoc.includes('notion.site');
+                  const isConfluence = plan.reqDoc.includes('atlassian.net/wiki') || plan.reqDoc.includes('confluence');
+                  const isFigma = plan.reqDoc.includes('figma.com');
+                  const isZoom = plan.reqDoc.includes('zoom.us');
+                  const isMiro = plan.reqDoc.includes('miro.com');
+
+                  // Convert Google Docs URL to embed format if needed
+                  let embedUrl = plan.reqDoc;
+                  if (isGoogleDoc && !plan.reqDoc.includes('/embed') && !plan.reqDoc.includes('/preview')) {
+                    // Convert /edit or /view to /preview for embedding
+                    embedUrl = plan.reqDoc
+                      .replace('/edit', '/preview')
+                      .replace('/view', '/preview');
+                    if (!embedUrl.includes('/preview')) {
+                      embedUrl = embedUrl + (embedUrl.includes('?') ? '&' : '?') + 'embedded=true';
+                    }
+                  }
+
+                  // For Figma, convert to embed URL
+                  if (isFigma && !plan.reqDoc.includes('embed')) {
+                    embedUrl = plan.reqDoc.replace('figma.com/file', 'figma.com/embed?embed_host=share&url=' + encodeURIComponent(plan.reqDoc));
+                  }
+
+                  // Check if it's an embeddable URL
+                  const isEmbeddable = isGoogleDoc || isNotion || isConfluence || isFigma || isZoom || isMiro;
+
+                  if (isEmbeddable) {
+                    return (
+                      <iframe
+                        src={embedUrl}
+                        width="100%"
+                        height="100%"
+                        className="absolute inset-0"
+                        style={{ border: 'none', minHeight: '600px' }}
+                        title="Requirements Document"
+                        loading="lazy"
+                        allow="fullscreen"
+                        allowFullScreen
+                      ></iframe>
+                    );
+                  }
+
+                  // For other URLs, show a message with link
+                  return (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-slate-50 dark:bg-slate-800">
+                      <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mb-4">
+                        <FileText className="w-8 h-8" />
+                      </div>
+                      <h4 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-2">Document Preview</h4>
+                      <p className="text-slate-600 dark:text-slate-400 max-w-md mb-6">
+                        This document type may not support embedding. For best results, use Google Docs, Notion, Confluence, Figma, Zoom Whiteboard, or Miro links.
+                      </p>
+                      <a
+                        href={plan.reqDoc}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg flex items-center gap-2 transition-colors"
+                      >
+                        Open Document <LinkIcon className="w-4 h-4" />
+                      </a>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           )}
