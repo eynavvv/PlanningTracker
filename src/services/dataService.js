@@ -70,6 +70,14 @@ class DataService {
 
             if (rpError) throw rpError;
 
+            // Fetch all deliverables
+            const { data: deliverables, error: delError } = await supabase
+                .from('deliverables')
+                .select('*')
+                .order('date', { ascending: true });
+
+            if (delError) throw delError;
+
             // Group and map data by initiative
             return initiatives.map(init => ({
                 id: init.id,
@@ -82,7 +90,13 @@ class DataService {
                 developers: init.developers || [],
                 detailedStatus: init.detailed_status || '',
                 initialPlanning: initialPlanning.find(ip => ip.initiative_id === init.id),
-                releasePlans: releasePlans.filter(rp => rp.initiative_id === init.id)
+                releasePlans: releasePlans.filter(rp => rp.initiative_id === init.id),
+                deliverables: deliverables?.filter(d => d.initiative_id === init.id).map(d => ({
+                    id: d.id,
+                    name: d.name,
+                    date: d.date,
+                    status: d.status || 'pending'
+                })) || []
             }));
         } catch (error) {
             console.error('Error fetching timeline data:', error);
@@ -243,6 +257,50 @@ class DataService {
     }
 
     /**
+     * Get activity feed for an initiative
+     */
+    async getInitiativeUpdates(initiativeId) {
+        try {
+            const { data, error } = await supabase
+                .from('initiative_updates')
+                .select('*')
+                .eq('initiative_id', initiativeId)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                if (error.code === 'PGRST116' || error.message.includes('not found')) return [];
+                throw error;
+            }
+            return data;
+        } catch (error) {
+            console.error('Error fetching initiative updates:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Create a new update in the activity feed
+     */
+    async createInitiativeUpdate(initiativeId, content) {
+        try {
+            const { data, error } = await supabase
+                .from('initiative_updates')
+                .insert([{
+                    initiative_id: initiativeId,
+                    content
+                }])
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('Error creating initiative update:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Create a new initiative
      */
     async createInitiative(name) {
@@ -284,12 +342,19 @@ class DataService {
             // Map common field names if necessary (e.g., techLead -> tech_lead)
             const dbUpdates = {};
             if ('techLead' in updates) dbUpdates.tech_lead = updates.techLead;
+            if ('TechLead' in updates) dbUpdates.tech_lead = updates.TechLead;
             if ('pm' in updates) dbUpdates.pm = updates.pm;
+            if ('PM' in updates) dbUpdates.pm = updates.PM;
             if ('ux' in updates) dbUpdates.ux = updates.ux;
+            if ('UX' in updates) dbUpdates.ux = updates.UX;
             if ('status' in updates) dbUpdates.status = updates.status;
+            if ('Status' in updates) dbUpdates.status = updates.Status;
             if ('group' in updates) dbUpdates.group = updates.group;
+            if ('Group' in updates) dbUpdates.group = updates.Group;
             if ('developers' in updates) dbUpdates.developers = updates.developers;
             if ('detailedStatus' in updates) dbUpdates.detailed_status = updates.detailedStatus;
+            if ('name' in updates) dbUpdates.name = updates.name;
+            if ('Name' in updates) dbUpdates.name = updates.Name;
 
             const { error } = await supabase
                 .from('initiatives')

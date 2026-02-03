@@ -28,6 +28,7 @@ export function useRealtimeSync() {
         { event: '*', schema: 'public', table: 'initiatives' },
         (payload: RealtimePayload) => {
           handleInitiativeChange(payload, queryClient);
+          broadcastChange('initiatives');
         }
       )
       .on(
@@ -35,6 +36,7 @@ export function useRealtimeSync() {
         { event: '*', schema: 'public', table: 'release_plans' },
         (payload: RealtimePayload) => {
           handleReleasePlanChange(payload, queryClient);
+          broadcastChange('release_plans');
         }
       )
       .on(
@@ -42,6 +44,7 @@ export function useRealtimeSync() {
         { event: '*', schema: 'public', table: 'initial_planning' },
         (payload: RealtimePayload) => {
           handleInitialPlanningChange(payload, queryClient);
+          broadcastChange('initial_planning');
         }
       )
       .on(
@@ -49,6 +52,27 @@ export function useRealtimeSync() {
         { event: '*', schema: 'public', table: 'deliverables' },
         (payload: RealtimePayload) => {
           handleDeliverableChange(payload, queryClient);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tasks' },
+        (payload: RealtimePayload) => {
+          handleTaskChange(payload, queryClient);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'epics' },
+        (payload: RealtimePayload) => {
+          handleEpicChange(payload, queryClient);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'initiative_updates' },
+        (_payload: RealtimePayload) => {
+          broadcastChange('initiative_updates');
         }
       )
       .subscribe();
@@ -138,4 +162,31 @@ function handleDeliverableChange(
       }
     }
   }
+}
+
+function handleTaskChange(
+  _payload: RealtimePayload,
+  queryClient: ReturnType<typeof useQueryClient>
+) {
+  queryClient.invalidateQueries({ queryKey: ['tasks'] });
+  window.dispatchEvent(new CustomEvent('supabase-update', { detail: { table: 'tasks' } }));
+}
+
+function handleEpicChange(
+  payload: RealtimePayload,
+  queryClient: ReturnType<typeof useQueryClient>
+) {
+  const { new: newData, old: oldData } = payload;
+  const releaseId = (newData?.release_id || oldData?.release_id) as string;
+
+  if (releaseId) {
+    queryClient.invalidateQueries({ queryKey: queryKeys.epics.byRelease(releaseId) });
+  }
+
+  window.dispatchEvent(new CustomEvent('supabase-update', { detail: { table: 'epics' } }));
+}
+
+// Global broadcast to notify manual state components
+function broadcastChange(table: string) {
+  window.dispatchEvent(new CustomEvent('supabase-update', { detail: { table } }));
 }

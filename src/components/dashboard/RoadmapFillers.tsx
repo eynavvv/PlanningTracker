@@ -138,7 +138,7 @@ function SortableTaskRow({ task, onDelete, onUpdate }: SortableTaskRowProps) {
           <GripVertical className="w-4 h-4" />
         </button>
       </td>
-      <td className="px-4 py-3">
+      <td className="px-6 py-4">
         {editingField === 'name' ? (
           <input
             type="text"
@@ -152,7 +152,7 @@ function SortableTaskRow({ task, onDelete, onUpdate }: SortableTaskRowProps) {
         ) : (
           <div
             onClick={() => startEditing('name', task.name)}
-            className="font-medium text-slate-900 dark:text-slate-100 truncate max-w-[200px] cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 px-2 py-1 -mx-2 -my-1 rounded transition-colors"
+            className="font-medium text-slate-900 dark:text-slate-100 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 px-2 py-1 -mx-2 -my-1 rounded transition-colors"
             title={`${task.name} (click to edit)`}
           >
             {task.name}
@@ -172,14 +172,14 @@ function SortableTaskRow({ task, onDelete, onUpdate }: SortableTaskRowProps) {
         ) : (
           <div
             onClick={() => startEditing('description', task.description || '')}
-            className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px] cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 px-2 py-0.5 -mx-2 rounded transition-colors"
+            className="text-xs text-slate-500 dark:text-slate-400 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 px-2 py-0.5 -mx-2 rounded transition-colors"
             title={task.description ? `${task.description} (click to edit)` : 'Click to add description'}
           >
             {task.description || <span className="italic text-slate-400">Add description...</span>}
           </div>
         )}
       </td>
-      <td className="px-4 py-3">
+      <td className="px-2 py-4 text-center">
         <select
           value={task.type || ''}
           onChange={(e) => onUpdate(task.id, 'type', e.target.value)}
@@ -191,7 +191,7 @@ function SortableTaskRow({ task, onDelete, onUpdate }: SortableTaskRowProps) {
           ))}
         </select>
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-4 text-center">
         <select
           value={task.phase}
           onChange={(e) => onUpdate(task.id, 'phase', e.target.value)}
@@ -202,15 +202,28 @@ function SortableTaskRow({ task, onDelete, onUpdate }: SortableTaskRowProps) {
           ))}
         </select>
       </td>
-      <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
-        <input
-          type="date"
-          value={task.target_date || ''}
-          onChange={(e) => onUpdate(task.id, 'target_date', e.target.value)}
-          className="px-2 py-1 text-xs border border-slate-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer"
-        />
+      <td className="px-2 py-4">
+        {editingField === 'target_date' ? (
+          <input
+            type="date"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={saveEdit}
+            onKeyDown={handleKeyDown}
+            autoFocus
+            className="bg-transparent border-b border-blue-400 outline-none w-full text-slate-600 dark:text-slate-300 px-1 py-0.5 text-sm"
+          />
+        ) : (
+          <div
+            onClick={() => startEditing('target_date', task.target_date || '')}
+            className="flex items-center justify-center gap-1.5 text-sm text-slate-600 dark:text-slate-300 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 px-2 py-1 rounded transition-colors whitespace-nowrap"
+          >
+            <Calendar className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+            <span>{task.target_date ? format(new Date(task.target_date), 'MMM d, yyyy') : '—'}</span>
+          </div>
+        )}
       </td>
-      <td className="px-4 py-3">
+      <td className="px-2 py-4 text-center">
         <select
           value={task.backlog || ''}
           onChange={(e) => onUpdate(task.id, 'backlog', e.target.value)}
@@ -222,11 +235,11 @@ function SortableTaskRow({ task, onDelete, onUpdate }: SortableTaskRowProps) {
           ))}
         </select>
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-4 text-center">
         <select
           value={task.group || ''}
           onChange={(e) => onUpdate(task.id, 'group', e.target.value)}
-          className="px-2 py-1 text-xs border border-slate-200 dark:border-slate-600 rounded focus:ring-2 focus:ring-blue-400 outline-none bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer"
+          className="bg-transparent border-b border-transparent focus:border-blue-400 focus:outline-none w-full text-sm text-slate-600 dark:text-slate-300"
         >
           <option value="">—</option>
           {GROUP_OPTIONS.map((opt) => (
@@ -234,7 +247,7 @@ function SortableTaskRow({ task, onDelete, onUpdate }: SortableTaskRowProps) {
           ))}
         </select>
       </td>
-      <td className="px-4 py-3">
+      <td className="px-2 py-4 text-center">
         {editingField === 'jira_link' ? (
           <input
             type="url"
@@ -321,7 +334,7 @@ export function RoadmapFillers({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
       {/* Collapsible Header */}
       <button
         onClick={onToggleCollapse}
@@ -353,13 +366,13 @@ export function RoadmapFillers({
                 <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                   <tr>
                     <th className="w-10"></th>
-                    <th className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[25%]">Task</th>
-                    <th className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[80px]">Type</th>
-                    <th className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[120px]">Phase</th>
-                    <th className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[120px]">Target Date</th>
-                    <th className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[80px]">Backlog</th>
-                    <th className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[80px]">Group</th>
-                    <th className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[50px]">Jira</th>
+                    <th className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[35%]">Task</th>
+                    <th className="px-2 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[80px] text-center">Type</th>
+                    <th className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[120px] text-center">Phase</th>
+                    <th className="px-2 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[150px] text-center">Target Date</th>
+                    <th className="px-2 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[85px] text-center">Backlog</th>
+                    <th className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[100px] text-center">Group</th>
+                    <th className="px-2 py-3 font-semibold text-slate-900 dark:text-slate-100 w-[60px] text-center">Jira</th>
                     <th className="w-10"></th>
                   </tr>
                 </thead>

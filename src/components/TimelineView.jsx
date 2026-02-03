@@ -17,7 +17,7 @@ import {
     isEqual
 } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronUp, Calendar, Info, Clock } from 'lucide-react';
+import { ChevronDown, ChevronUp, Calendar, Info, Clock, Layers, Rocket } from 'lucide-react';
 
 // Team logo images
 const TEAM_LOGOS = {
@@ -25,7 +25,7 @@ const TEAM_LOGOS = {
     Zebra: '/zebra-logo.png'
 };
 
-const TimelineView = ({ data, onUpdateItem }) => {
+const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
     const navigate = useNavigate();
     const [isExpanded, setIsExpanded] = useState(false);
     const [draggingItem, setDraggingItem] = useState(null); // { id, deltaDays, originalStartDate, originalEndDate }
@@ -34,105 +34,133 @@ const TimelineView = ({ data, onUpdateItem }) => {
     // Process data into timeline items
     const timelineItems = useMemo(() => {
         const items = [];
-        if (!data) return items;
+        if (data) {
+            data.forEach(initiative => {
+                // 1. Initiative Planning Phase
+                if (initiative.initialPlanning?.start_date && initiative.initialPlanning?.planned_end_date) {
+                    items.push({
+                        id: `init-plan-${initiative.id}`,
+                        name: initiative.name,
+                        phase: 'Initiative Planning',
+                        startDate: new Date(initiative.initialPlanning.start_date),
+                        endDate: new Date(initiative.initialPlanning.planned_end_date),
+                        type: 'initiative-planning',
+                        initiativeName: initiative.name,
+                        initiativeId: initiative.id,
+                        group: initiative.group,
+                        detailedStatus: initiative.detailedStatus,
+                        overallStatus: initiative.status,
+                        deliverables: initiative.deliverables
+                    });
+                }
 
-        data.forEach(initiative => {
-            // 1. Initiative Planning Phase
-            if (initiative.initialPlanning?.start_date && initiative.initialPlanning?.planned_end_date) {
-                items.push({
-                    id: `init-plan-${initiative.id}`,
-                    name: initiative.name,
-                    phase: 'Initiative Planning',
-                    startDate: new Date(initiative.initialPlanning.start_date),
-                    endDate: new Date(initiative.initialPlanning.planned_end_date),
-                    type: 'initiative-planning',
-                    initiativeName: initiative.name,
-                    initiativeId: initiative.id,
-                    group: initiative.group,
-                    detailedStatus: initiative.detailedStatus,
-                    overallStatus: initiative.status
+                // 2. Release Phases
+                initiative.releasePlans?.forEach(rp => {
+                    // Release Pre-Planning
+                    if (rp.pre_planning_start_date && rp.pre_planning_end_date) {
+                        items.push({
+                            id: `release-pre-plan-${rp.id}`,
+                            name: rp.goal,
+                            phase: 'Pre-Planning',
+                            startDate: new Date(rp.pre_planning_start_date),
+                            endDate: new Date(rp.pre_planning_end_date),
+                            type: 'release-pre-planning',
+                            initiativeName: initiative.name,
+                            initiativeId: initiative.id,
+                            group: initiative.group,
+                            releaseId: rp.id,
+                            detailedStatus: initiative.detailedStatus,
+                            overallStatus: initiative.status,
+                            deliverables: initiative.deliverables
+                        });
+                    }
+
+                    // Release Planning
+                    if (rp.planning_start_date && rp.planning_end_date) {
+                        items.push({
+                            id: `release-plan-${rp.id}`,
+                            name: rp.goal,
+                            phase: 'Planning',
+                            startDate: new Date(rp.planning_start_date),
+                            endDate: new Date(rp.planning_end_date),
+                            type: 'release-planning',
+                            initiativeName: initiative.name,
+                            initiativeId: initiative.id,
+                            group: initiative.group,
+                            releaseId: rp.id,
+                            detailedStatus: initiative.detailedStatus,
+                            overallStatus: initiative.status,
+                            deliverables: initiative.deliverables
+                        });
+                    }
+
+                    // Release Dev
+                    if (rp.dev_start_date && rp.dev_end_date) {
+                        items.push({
+                            id: `release-dev-${rp.id}`,
+                            name: rp.goal,
+                            phase: 'Dev',
+                            startDate: new Date(rp.dev_start_date),
+                            endDate: new Date(rp.dev_end_date),
+                            type: 'release-dev',
+                            initiativeName: initiative.name,
+                            initiativeId: initiative.id,
+                            group: initiative.group,
+                            releaseId: rp.id,
+                            detailedStatus: initiative.detailedStatus,
+                            overallStatus: initiative.status,
+                            deliverables: initiative.deliverables
+                        });
+                    }
+
+                    // QA Event Milestone
+                    if (rp.qa_event_date) {
+                        items.push({
+                            id: `qa-event-${rp.id}`,
+                            name: rp.goal,
+                            phase: 'QA Event',
+                            startDate: new Date(rp.qa_event_date),
+                            endDate: new Date(rp.qa_event_date),
+                            type: 'qa-event',
+                            isMilestone: true,
+                            initiativeName: initiative.name,
+                            initiativeId: initiative.id,
+                            group: initiative.group,
+                            releaseId: rp.id,
+                            detailedStatus: initiative.detailedStatus,
+                            overallStatus: initiative.status,
+                            deliverables: initiative.deliverables
+                        });
+                    }
                 });
-            }
+            });
+        }
 
-            // 2. Release Phases
-            initiative.releasePlans?.forEach(rp => {
-                // Release Pre-Planning
-                if (rp.pre_planning_start_date && rp.pre_planning_end_date) {
+        // Add Roadmap Fillers
+        if (roadmapFillers) {
+            roadmapFillers.forEach(filler => {
+                if (filler.target_date) {
                     items.push({
-                        id: `release-pre-plan-${rp.id}`,
-                        name: rp.goal,
-                        phase: 'Pre-Planning',
-                        startDate: new Date(rp.pre_planning_start_date),
-                        endDate: new Date(rp.pre_planning_end_date),
-                        type: 'release-pre-planning',
-                        initiativeName: initiative.name,
-                        initiativeId: initiative.id,
-                        group: initiative.group,
-                        releaseId: rp.id,
-                        detailedStatus: initiative.detailedStatus,
-                        overallStatus: initiative.status
-                    });
-                }
-
-                // Release Planning
-                if (rp.planning_start_date && rp.planning_end_date) {
-                    items.push({
-                        id: `release-plan-${rp.id}`,
-                        name: rp.goal,
-                        phase: 'Planning',
-                        startDate: new Date(rp.planning_start_date),
-                        endDate: new Date(rp.planning_end_date),
-                        type: 'release-planning',
-                        initiativeName: initiative.name,
-                        initiativeId: initiative.id,
-                        group: initiative.group,
-                        releaseId: rp.id,
-                        detailedStatus: initiative.detailedStatus,
-                        overallStatus: initiative.status
-                    });
-                }
-
-                // Release Dev
-                if (rp.dev_start_date && rp.dev_end_date) {
-                    items.push({
-                        id: `release-dev-${rp.id}`,
-                        name: rp.goal,
-                        phase: 'Dev',
-                        startDate: new Date(rp.dev_start_date),
-                        endDate: new Date(rp.dev_end_date),
-                        type: 'release-dev',
-                        initiativeName: initiative.name,
-                        initiativeId: initiative.id,
-                        group: initiative.group,
-                        releaseId: rp.id,
-                        detailedStatus: initiative.detailedStatus,
-                        overallStatus: initiative.status
-                    });
-                }
-
-                // QA Event Milestone
-                if (rp.qa_event_date) {
-                    items.push({
-                        id: `qa-event-${rp.id}`,
-                        name: rp.goal,
-                        phase: 'QA Event',
-                        startDate: new Date(rp.qa_event_date),
-                        endDate: new Date(rp.qa_event_date),
-                        type: 'qa-event',
+                        id: `filler-${filler.id}`,
+                        name: filler.name,
+                        phase: filler.phase || 'Filler',
+                        startDate: new Date(filler.target_date),
+                        endDate: new Date(filler.target_date),
+                        type: 'roadmap-filler',
                         isMilestone: true,
-                        initiativeName: initiative.name,
-                        initiativeId: initiative.id,
-                        group: initiative.group,
-                        releaseId: rp.id,
-                        detailedStatus: initiative.detailedStatus,
-                        overallStatus: initiative.status
+                        markerType: 'filler',
+                        initiativeName: 'Roadmap Fillers',
+                        initiativeId: 'roadmap-fillers',
+                        group: filler.group || 'General',
+                        detailedStatus: filler.description,
+                        isFiller: true
                     });
                 }
             });
-        });
+        }
 
         return items.sort((a, b) => a.startDate - b.startDate);
-    }, [data]);
+    }, [data, roadmapFillers]);
 
     // Calculate timeline range
     const range = useMemo(() => {
@@ -386,41 +414,71 @@ const TimelineView = ({ data, onUpdateItem }) => {
                             {Object.entries(initiativeRows).map(([name, items], rowIdx) => {
                                 // Strict grouping: Initial Plan on row 0, then one row per Release
                                 const subRows = [];
+                                const isFillerRow = name === 'Roadmap Fillers';
 
-                                // 1. Initiative Planning (no releaseId)
-                                const initItems = items.filter(i => !i.releaseId);
+                                if (isFillerRow) {
+                                    // Stacking algorithm for fillers to avoid horizontal overlap
+                                    const sortedItems = [...items].sort((a, b) => a.startDate - b.startDate);
+                                    const rows = [];
+
+                                    sortedItems.forEach(item => {
+                                        let placed = false;
+                                        for (const row of rows) {
+                                            // Check if item overlaps with any item in this row (with 5 day padding for visibility)
+                                            const overlaps = row.some(rowItem => {
+                                                const startA = subDays(item.startDate, 5);
+                                                const endA = addDays(item.endDate, 5);
+                                                const startB = rowItem.startDate;
+                                                const endB = rowItem.endDate;
+                                                return isBefore(startA, endB) && isAfter(endA, startB);
+                                            });
+
+                                            if (!overlaps) {
+                                                row.push(item);
+                                                placed = true;
+                                                break;
+                                            }
+                                        }
+                                        if (!placed) rows.push([item]);
+                                    });
+                                    subRows.push(...rows);
+                                } else {
+
+                                    // 1. Initiative Planning (no releaseId)
+                                    const initItems = items.filter(i => !i.releaseId);
 
 
 
-                                // 2. Group by Release ID
-                                const releaseGroups = {};
-                                items.filter(i => i.releaseId).forEach(i => {
-                                    if (!releaseGroups[i.releaseId]) releaseGroups[i.releaseId] = [];
-                                    releaseGroups[i.releaseId].push(i);
-                                });
+                                    // 2. Group by Release ID
+                                    const releaseGroups = {};
+                                    items.filter(i => i.releaseId).forEach(i => {
+                                        if (!releaseGroups[i.releaseId]) releaseGroups[i.releaseId] = [];
+                                        releaseGroups[i.releaseId].push(i);
+                                    });
 
-                                // Sort releases by date to ensure chronological order top-to-bottom
-                                const sortedReleaseGroups = Object.values(releaseGroups).sort((a, b) => {
-                                    const startA = Math.min(...a.map(i => i.startDate));
-                                    const startB = Math.min(...b.map(i => i.startDate));
-                                    return startA - startB;
-                                });
+                                    // Sort releases by date to ensure chronological order top-to-bottom
+                                    const sortedReleaseGroups = Object.values(releaseGroups).sort((a, b) => {
+                                        const startA = Math.min(...a.map(i => i.startDate));
+                                        const startB = Math.min(...b.map(i => i.startDate));
+                                        return startA - startB;
+                                    });
 
-                                // Merge Initiative Planning with First Release
-                                if (sortedReleaseGroups.length > 0) {
-                                    // Row 0: Initiative Planning + 1st Release
-                                    subRows.push([...initItems, ...sortedReleaseGroups[0]]);
+                                    // Merge Initiative Planning with First Release
+                                    if (sortedReleaseGroups.length > 0) {
+                                        // Row 0: Initiative Planning + 1st Release
+                                        subRows.push([...initItems, ...sortedReleaseGroups[0]]);
 
-                                    // Subsequent Rows: Remaining Releases
-                                    sortedReleaseGroups.slice(1).forEach(group => subRows.push(group));
-                                } else if (initItems.length > 0) {
-                                    // If no releases, just show Initiative Planning
-                                    subRows.push(initItems);
+                                        // Subsequent Rows: Remaining Releases
+                                        sortedReleaseGroups.slice(1).forEach(group => subRows.push(group));
+                                    } else if (initItems.length > 0) {
+                                        // If no releases, just show Initiative Planning
+                                        subRows.push(initItems);
+                                    }
                                 }
 
                                 // Get the group from the first item in this initiative's items
                                 const initiativeGroup = items[0]?.group;
-                                const teamLogo = TEAM_LOGOS[initiativeGroup];
+                                const teamLogo = isFillerRow ? null : TEAM_LOGOS[initiativeGroup];
 
                                 return (
                                     <div key={name} className="relative flex flex-col gap-2 border-b border-slate-50 pb-2">
@@ -428,9 +486,11 @@ const TimelineView = ({ data, onUpdateItem }) => {
                                             {/* Decorative Background for legibility when scrolling */}
                                             <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-transparent -z-10 rounded-r-xl" />
 
-                                            {/* Team Logo */}
-                                            <div className="flex items-center justify-center w-7 h-7 rounded-full overflow-hidden shadow-sm border border-slate-200">
-                                                {teamLogo ? (
+                                            {/* Icon/Logo */}
+                                            <div className={`flex items-center justify-center w-7 h-7 rounded-full overflow-hidden shadow-sm border ${isFillerRow ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'border-slate-200'}`}>
+                                                {isFillerRow ? (
+                                                    <Rocket className="w-4 h-4" />
+                                                ) : teamLogo ? (
                                                     <img
                                                         src={teamLogo}
                                                         alt={`${initiativeGroup} team`}
@@ -443,10 +503,10 @@ const TimelineView = ({ data, onUpdateItem }) => {
                                                 )}
                                             </div>
                                             <div className="flex items-baseline gap-2">
-                                                <h3 className="text-sm font-bold text-slate-800 tracking-tight">
+                                                <h3 className={`text-sm font-bold tracking-tight ${isFillerRow ? 'text-indigo-900' : 'text-slate-800'}`}>
                                                     {name}
                                                 </h3>
-                                                <div className="h-px bg-slate-200 w-12 self-center opacity-50" />
+                                                <div className={`h-px w-12 self-center opacity-50 ${isFillerRow ? 'bg-indigo-200' : 'bg-slate-200'}`} />
                                             </div>
                                         </div>
 
@@ -462,12 +522,20 @@ const TimelineView = ({ data, onUpdateItem }) => {
                                                     const colorClass =
                                                         item.type === 'initiative-planning' ? 'bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200' :
                                                             item.type === 'release-pre-planning' ? 'bg-cyan-100 text-cyan-700 border-cyan-200 hover:bg-cyan-200' :
-                                                            item.type === 'release-planning' ? 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200' :
-                                                            item.type === 'qa-event' ? 'bg-orange-100 text-orange-700 border-orange-300 hover:bg-orange-200' :
-                                                                'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200';
+                                                                item.type === 'release-planning' ? 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200' :
+                                                                    item.type === 'qa-event' ? 'bg-orange-100 text-orange-700 border-orange-300 hover:bg-orange-200' :
+                                                                        'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200';
 
-                                                    // Render milestone (icon above with anchor dot on timeline) for QA Event
+                                                    // Render milestone (icon above with anchor dot on timeline)
                                                     if (item.isMilestone) {
+                                                        const isFiller = item.type === 'roadmap-filler';
+                                                        const mainColor = isFiller ? 'indigo' : 'orange';
+                                                        const gradientFrom = isFiller ? 'from-indigo-400' : 'from-orange-400';
+                                                        const gradientTo = isFiller ? 'to-indigo-600' : 'to-orange-600';
+                                                        const glowColor = isFiller ? 'bg-indigo-400/30' : 'bg-orange-400/30';
+                                                        const borderColor = isFiller ? 'border-indigo-300' : 'border-orange-300';
+                                                        const anchorColor = isFiller ? 'bg-indigo-500' : 'bg-orange-500';
+
                                                         return (
                                                             <div
                                                                 key={item.id}
@@ -480,38 +548,45 @@ const TimelineView = ({ data, onUpdateItem }) => {
                                                                     <div className="absolute -top-10 left-1/2 -translate-x-1/2">
                                                                         <div className="relative">
                                                                             {/* Outer glow ring */}
-                                                                            <div className="absolute inset-0 bg-orange-400/30 rounded-full blur-sm animate-pulse" style={{ width: '28px', height: '28px', margin: '-2px' }} />
+                                                                            <div className={`absolute inset-0 ${glowColor} rounded-full blur-sm animate-pulse`} style={{ width: '28px', height: '28px', margin: '-2px' }} />
                                                                             {/* Main icon container */}
-                                                                            <div className="w-6 h-6 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg shadow-lg border-2 border-orange-300 flex items-center justify-center transform hover:scale-110 transition-transform cursor-pointer">
-                                                                                {/* Bug icon SVG */}
-                                                                                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-white" fill="currentColor">
-                                                                                    <path d="M12 2C13.1 2 14 2.9 14 4C14 4.1 14 4.2 14 4.3C16.4 5.2 18 7.4 18 10V11H19C19.6 11 20 11.4 20 12S19.6 13 19 13H18V14C18 15.1 17.8 16.2 17.4 17.2L19.5 19.3C19.9 19.7 19.9 20.3 19.5 20.7C19.1 21.1 18.5 21.1 18.1 20.7L16.3 18.9C15.2 19.6 13.7 20 12 20C10.3 20 8.8 19.6 7.7 18.9L5.9 20.7C5.5 21.1 4.9 21.1 4.5 20.7C4.1 20.3 4.1 19.7 4.5 19.3L6.6 17.2C6.2 16.2 6 15.1 6 14V13H5C4.4 13 4 12.6 4 12S4.4 11 5 11H6V10C6 7.4 7.6 5.2 10 4.3C10 4.2 10 4.1 10 4C10 2.9 10.9 2 12 2ZM12 6C9.8 6 8 7.8 8 10V14C8 16.2 9.8 18 12 18C14.2 18 16 16.2 16 14V10C16 7.8 14.2 6 12 6ZM12 8C12.6 8 13 8.4 13 9V11C13 11.6 12.6 12 12 12C11.4 12 11 11.6 11 11V9C11 8.4 11.4 8 12 8Z"/>
-                                                                                </svg>
+                                                                            <div className={`w-6 h-6 bg-gradient-to-br ${gradientFrom} ${gradientTo} rounded-lg shadow-lg border-2 ${borderColor} flex items-center justify-center transform hover:scale-110 transition-transform cursor-pointer`}>
+                                                                                {isFiller ? (
+                                                                                    <Rocket className="w-3.5 h-3.5 text-white" />
+                                                                                ) : (
+                                                                                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-white" fill="currentColor">
+                                                                                        <path d="M12 2C13.1 2 14 2.9 14 4C14 4.1 14 4.2 14 4.3C16.4 5.2 18 7.4 18 10V11H19C19.6 11 20 11.4 20 12S19.6 13 19 13H18V14C18 15.1 17.8 16.2 17.4 17.2L19.5 19.3C19.9 19.7 19.9 20.3 19.5 20.7C19.1 21.1 18.5 21.1 18.1 20.7L16.3 18.9C15.2 19.6 13.7 20 12 20C10.3 20 8.8 19.6 7.7 18.9L5.9 20.7C5.5 21.1 4.9 21.1 4.5 20.7C4.1 20.3 4.1 19.7 4.5 19.3L6.6 17.2C6.2 16.2 6 15.1 6 14V13H5C4.4 13 4 12.6 4 12S4.4 11 5 11H6V10C6 7.4 7.6 5.2 10 4.3C10 4.2 10 4.1 10 4C10 2.9 10.9 2 12 2ZM12 6C9.8 6 8 7.8 8 10V14C8 16.2 9.8 18 12 18C14.2 18 16 16.2 16 14V10C16 7.8 14.2 6 12 6ZM12 8C12.6 8 13 8.4 13 9V11C13 11.6 12.6 12 12 12C11.4 12 11 11.6 11 11V9C11 8.4 11.4 8 12 8Z" />
+                                                                                    </svg>
+                                                                                )}
                                                                             </div>
-                                                                            {/* Small checkmark badge */}
-                                                                            <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border border-white flex items-center justify-center shadow-sm">
-                                                                                <svg viewBox="0 0 24 24" className="w-1.5 h-1.5 text-white" fill="none" stroke="currentColor" strokeWidth="4">
-                                                                                    <path d="M5 12l5 5L20 7" />
-                                                                                </svg>
-                                                                            </div>
+                                                                            {!isFiller && (
+                                                                                <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border border-white flex items-center justify-center shadow-sm">
+                                                                                    <svg viewBox="0 0 24 24" className="w-1.5 h-1.5 text-white" fill="none" stroke="currentColor" strokeWidth="4">
+                                                                                        <path d="M5 12l5 5L20 7" />
+                                                                                    </svg>
+                                                                                </div>
+                                                                            )}
                                                                         </div>
                                                                     </div>
 
                                                                     {/* Vertical connector line */}
-                                                                    <div className="absolute -top-7 left-1/2 -translate-x-1/2 w-0.5 h-7 bg-gradient-to-b from-orange-400 to-orange-300" />
+                                                                    <div className={`absolute -top-7 left-1/2 -translate-x-1/2 w-0.5 h-7 bg-gradient-to-b ${gradientFrom.replace('from-', 'via-')} ${gradientTo.replace('to-', 'to-')}`} />
 
                                                                     {/* Anchor dot on the timeline */}
-                                                                    <div className="w-3 h-3 bg-orange-500 rounded-full border-2 border-white shadow-md" />
+                                                                    <div className={`w-3 h-3 ${anchorColor} rounded-full border-2 border-white shadow-md`} />
                                                                 </div>
 
                                                                 {/* Tooltip */}
-                                                                <div className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-12 p-3 bg-ss-navy text-white rounded-lg shadow-xl z-[100] w-56 pointer-events-none before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-8 before:border-transparent before:border-t-ss-navy">
-                                                                    <div className="text-xs font-bold mb-2 border-b border-blue-400/30 pb-1 text-center truncate">{item.name}</div>
-                                                                    <div className="flex flex-col gap-2 text-[10px]">
+                                                                <div className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-12 p-3 bg-ss-navy text-white rounded-lg shadow-xl z-[100] w-64 pointer-events-none before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-8 before:border-transparent before:border-t-ss-navy">
+                                                                    <div className="text-sm font-bold mb-2 border-b border-blue-400/30 pb-1.5 text-center truncate">{item.name}</div>
+                                                                    <div className="flex flex-col gap-2 text-xs">
                                                                         <div className="text-center">
-                                                                            <div className="text-orange-300 font-bold uppercase tracking-tighter opacity-70">QA Event</div>
-                                                                            <div className="font-medium whitespace-nowrap">{format(currentStartDate, 'MMM d, yyyy')}</div>
+                                                                            <div className={`${isFiller ? 'text-indigo-300' : 'text-orange-300'} font-bold uppercase tracking-widest opacity-70 text-[11px]`}>{item.phase}</div>
+                                                                            <div className="font-medium whitespace-nowrap text-xs">{format(currentStartDate, 'MMM d, yyyy')}</div>
                                                                         </div>
+                                                                        {isFiller && item.detailedStatus && (
+                                                                            <div className="mt-1 text-xs text-blue-100 opacity-80 italic line-clamp-2">"{item.detailedStatus}"</div>
+                                                                        )}
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -531,9 +606,25 @@ const TimelineView = ({ data, onUpdateItem }) => {
                                                                 className="absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-black/10 rounded-l-lg transition-colors z-20"
                                                             />
 
-                                                            <span className="truncate pointer-events-none select-none w-full text-center">
+                                                            <span className="truncate pointer-events-none select-none w-full text-center relative z-10">
                                                                 {item.name} <span className="opacity-60 font-medium text-[9px]">({item.phase})</span>
                                                             </span>
+
+                                                            {item.type === 'release-dev' && (
+                                                                <div className="absolute inset-0 flex items-center pointer-events-none overflow-hidden pr-2">
+                                                                    {Array.from({ length: Math.ceil((differenceInDays(currentEndDate, currentStartDate) + 1) / 7) }).map((_, i) => (
+                                                                        <div
+                                                                            key={i}
+                                                                            className="flex-none h-full flex items-end pb-0.5 border-l border-current/10 first:border-l-0"
+                                                                            style={{ width: `${dayWidth * 7}px` }}
+                                                                        >
+                                                                            <span className="text-[7px] font-black pl-1 opacity-30 uppercase tracking-tighter">
+                                                                                W{i + 1}
+                                                                            </span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
 
                                                             {/* Right Resize Handle */}
                                                             <div
@@ -542,42 +633,55 @@ const TimelineView = ({ data, onUpdateItem }) => {
                                                             />
 
                                                             {/* Tooltip */}
-                                                            <div className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-3 bg-ss-navy text-white rounded-lg shadow-xl z-[100] w-72 pointer-events-none before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-8 before:border-transparent before:border-t-ss-navy">
-                                                                <div className="text-xs font-bold mb-2 border-b border-blue-400/30 pb-1 text-center truncate">{item.name}</div>
-                                                                <div className="flex flex-col gap-2 text-[10px]">
-                                                                    <div className="grid grid-cols-2 gap-2 border-b border-blue-400/10 pb-2">
-                                                                        <div>
-                                                                            <div className="text-blue-300 font-bold uppercase tracking-tighter opacity-70">Phase</div>
-                                                                            <div className="font-medium">{item.phase}</div>
+                                                            <div className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-4 p-3 bg-ss-navy text-white rounded-lg shadow-2xl z-[500] w-80 pointer-events-none before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-8 before:border-transparent before:border-t-ss-navy">
+                                                                <div className="text-sm font-bold mb-2 border-b border-blue-400/30 pb-1.5 text-center truncate">{item.name}</div>
+                                                                <div className="flex flex-col gap-2.5 text-xs">
+                                                                    <div className="flex items-center justify-between bg-blue-900/40 px-2.5 py-1.5 rounded border border-blue-400/10 text-[10px]">
+                                                                        <div className="flex gap-1 items-center">
+                                                                            <span className="text-blue-300 opacity-50 uppercase font-bold tracking-tight text-[10px]">Start</span>
+                                                                            <span className="font-bold text-[11px]">{format(currentStartDate, 'MMM d, yyyy')}</span>
                                                                         </div>
-                                                                        <div>
-                                                                            <div className="text-blue-300 font-bold uppercase tracking-tighter opacity-70">Status</div>
-                                                                            <div className="font-medium truncate">{item.overallStatus || 'N/A'}</div>
+                                                                        <div className="flex gap-1 items-center ml-auto">
+                                                                            <span className="text-blue-300 opacity-50 uppercase font-bold tracking-tight text-[10px]">End</span>
+                                                                            <span className="font-bold text-[11px]">{format(currentEndDate, 'MMM d, yyyy')}</span>
                                                                         </div>
                                                                     </div>
 
-                                                                    <div className="grid grid-cols-2 gap-2">
-                                                                        <div>
-                                                                            <div className="text-blue-300 font-bold uppercase tracking-tighter opacity-70">Start Date</div>
-                                                                            <div className="font-medium whitespace-nowrap">{format(currentStartDate, 'MMM d, yyyy')}</div>
+                                                                    {item.detailedStatus && (
+                                                                        <div className="space-y-1">
+                                                                            <div className="text-blue-300 text-[10px] uppercase tracking-widest font-black opacity-80 text-center">Current Focus</div>
+                                                                            <div className="text-xs italic text-blue-50 leading-relaxed bg-blue-900/40 p-2.5 rounded-lg border border-blue-400/10 text-left">
+                                                                                "{item.detailedStatus}"
+                                                                            </div>
                                                                         </div>
-                                                                        <div>
-                                                                            <div className="text-blue-300 font-bold uppercase tracking-tighter opacity-70">End Date</div>
-                                                                            <div className="font-medium whitespace-nowrap">{format(currentEndDate, 'MMM d, yyyy')}</div>
+                                                                    )}
+
+                                                                    {item.deliverables && item.deliverables.filter(d => d.status !== 'done').length > 0 && (
+                                                                        <div className="space-y-1">
+                                                                            <div className="flex justify-between items-center relative">
+                                                                                <div className="text-emerald-400 text-[10px] uppercase tracking-widest font-black opacity-80 w-full text-center">Next Deliverables</div>
+                                                                                <div className="text-[10px] text-emerald-400/60 font-bold uppercase absolute right-0">[{item.deliverables.filter(d => d.status !== 'done').length}]</div>
+                                                                            </div>
+                                                                            <div className="space-y-1">
+                                                                                {item.deliverables
+                                                                                    .filter(d => d.status !== 'done')
+                                                                                    .slice(0, 5)
+                                                                                    .map((d, i) => (
+                                                                                        <div key={i} className="text-xs bg-white/5 p-2 rounded border border-white/10 flex justify-between items-center gap-2">
+                                                                                            <span className="truncate flex-1 font-medium text-left">{d.name}</span>
+                                                                                            {d.date && (
+                                                                                                <span className="text-[10px] text-blue-300 font-bold whitespace-nowrap bg-blue-900/40 px-1.5 py-0.5 rounded border border-blue-400/20">
+                                                                                                    {format(new Date(d.date), 'MMM d')}
+                                                                                                </span>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    ))}
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
+                                                                    )}
                                                                 </div>
 
-                                                                {item.detailedStatus && (
-                                                                    <div className="mt-2 pt-2 border-t border-blue-400/20">
-                                                                        <div className="text-blue-300 text-[9px] uppercase tracking-widest font-black mb-1 opacity-80">Current Focus</div>
-                                                                        <div className="text-[10px] italic text-blue-50 leading-relaxed bg-blue-900/40 p-2 rounded-lg border border-blue-400/10">
-                                                                            "{item.detailedStatus}"
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-
-                                                                <div className="mt-2 pt-2 border-t border-blue-400/20 text-[8px] text-blue-300 uppercase tracking-widest font-black text-center opacity-40">
+                                                                <div className="mt-3 pt-2 border-t border-blue-400/20 text-[8px] text-blue-300 uppercase tracking-widest font-black text-center opacity-40">
                                                                     DRAG TO MOVE • EDGES TO RESIZE
                                                                 </div>
                                                             </div>

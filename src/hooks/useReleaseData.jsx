@@ -47,6 +47,19 @@ export function ReleaseProvider({ children, planId }) {
     useEffect(() => {
         if (!planId) return;
         loadReleaseData();
+
+        // Listen for real-time updates from other users
+        const handleRemoteUpdate = (event) => {
+            const table = event.detail?.table;
+            console.log(`Real-time update received for: ${table}`);
+
+            // Re-fetch all data for this plan if any relevant table changed
+            // (initiatives, release_plans, initial_planning, epics, deliverables)
+            loadReleaseData();
+        };
+
+        window.addEventListener('supabase-update', handleRemoteUpdate);
+        return () => window.removeEventListener('supabase-update', handleRemoteUpdate);
     }, [planId]);
 
     const loadReleaseData = async () => {
@@ -62,7 +75,9 @@ export function ReleaseProvider({ children, planId }) {
 
             try {
                 const sheetData = await dataService.getRelease(planId);
+                const updates = await dataService.getInitiativeUpdates(planId);
                 const loadedData = {
+                    updates,
                     Initiative: {
                         id: planId,
                         Name: sheetData.Initiative.name,
@@ -98,49 +113,92 @@ export function ReleaseProvider({ children, planId }) {
     };
 
     const updateInitiativeMeta = (field, value) => {
-        setData(prev => ({
-            ...prev,
-            Initiative: { ...prev.Initiative, [field]: value }
-        }));
+        setData(prev => {
+            const next = {
+                ...prev,
+                Initiative: { ...prev.Initiative, [field]: value }
+            };
 
-        if (syncTimeoutRef.current.meta) {
-            clearTimeout(syncTimeoutRef.current.meta);
-        }
+            // Sync status between metadata and initial planning
+            if (field === 'Status' || field === 'status') {
+                next.Initiative.InitialPlanning = {
+                    ...next.Initiative.InitialPlanning,
+                    Status: value
+                };
+            }
+            return next;
+        });
 
-        syncTimeoutRef.current.meta = setTimeout(async () => {
+        const isStatusUpdate = field === 'Status' || field === 'status';
+
+        const performUpdate = async () => {
             try {
                 if (!dataService.isConfigured()) return;
                 await dataService.updateInitiative(planId, { [field]: value });
+
+                // If it's a status update, also update the initial planning status in the db
+                if (isStatusUpdate) {
+                    await dataService.updateInitialPlanning(planId, { Status: value });
+                }
             } catch (err) {
                 console.error('Failed to sync initiative metadata:', err);
             }
-        }, 1000);
+        };
+
+        if (isStatusUpdate) {
+            performUpdate();
+        } else {
+            if (syncTimeoutRef.current.meta) {
+                clearTimeout(syncTimeoutRef.current.meta);
+            }
+            syncTimeoutRef.current.meta = setTimeout(performUpdate, 1000);
+        }
     };
 
     const updateInitialPlanning = useCallback((field, value) => {
-        setData(prev => ({
-            ...prev,
-            Initiative: {
-                ...prev.Initiative,
-                InitialPlanning: {
-                    ...prev.Initiative.InitialPlanning,
-                    [field]: value
+        setData(prev => {
+            const next = {
+                ...prev,
+                Initiative: {
+                    ...prev.Initiative,
+                    InitialPlanning: {
+                        ...prev.Initiative.InitialPlanning,
+                        [field]: value
+                    }
                 }
+            };
+
+            // Sync status between metadata and initial planning
+            if (field === 'Status' || field === 'status') {
+                next.Initiative.Status = value;
             }
-        }));
+            return next;
+        });
 
-        if (syncTimeoutRef.current.initialPlanning) {
-            clearTimeout(syncTimeoutRef.current.initialPlanning);
-        }
+        const isStatusUpdate = field === 'Status' || field === 'status';
 
-        syncTimeoutRef.current.initialPlanning = setTimeout(async () => {
+        const performUpdate = async () => {
             try {
                 if (!dataService.isConfigured()) return;
                 await dataService.updateInitialPlanning(planId, { [field]: value });
+
+                // If it's a status update, also update the main initiative status in the db
+                if (isStatusUpdate) {
+                    await dataService.updateInitiative(planId, { Status: value });
+                }
             } catch (err) {
                 console.error('Failed to sync initiative planning:', err);
             }
-        }, 1000);
+        };
+
+        if (isStatusUpdate) {
+            performUpdate();
+        } else {
+            if (syncTimeoutRef.current.initialPlanning) {
+                clearTimeout(syncTimeoutRef.current.initialPlanning);
+            }
+            syncTimeoutRef.current.initialPlanning = setTimeout(performUpdate, 1000);
+        }
     }, [planId]);
 
     const updateReleasePlan = useCallback((planIndex, field, value) => {
@@ -447,6 +505,21 @@ export function ReleaseProvider({ children, planId }) {
         }
     };
 
+    const archiveDetailedStatus = async () => {
+        const content = data.Initiative.detailedStatus;
+        if (!content || !content.trim()) return;
+
+        try {
+            await dataService.createInitiativeUpdate(planId, content);
+            await dataService.updateInitiative(planId, { detailedStatus: '' });
+
+            // Re-load data to get updated history and clear status
+            loadReleaseData();
+        } catch (err) {
+            console.error('Failed to archive detailed status:', err);
+        }
+    };
+
     const value = {
         data,
         isLoading,
@@ -464,6 +537,7 @@ export function ReleaseProvider({ children, planId }) {
         addDeliverable,
         updateDeliverable,
         deleteDeliverable,
+        archiveDetailedStatus,
         refresh: loadReleaseData
     };
 
