@@ -117,7 +117,7 @@ const ContentWrapper = ({ activeView, setActiveView }) => {
         <div className="min-h-screen bg-slate-50 flex flex-col font-inter">
             <PlanHeader />
             <div className="flex-1 overflow-auto">
-                <div className="max-w-[1600px] mx-auto p-6">
+                <div className="max-w-[1800px] mx-auto p-6">
                     {/* Live Status Section at the Top */}
                     <InitiativeLiveStatus />
 

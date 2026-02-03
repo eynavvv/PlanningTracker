@@ -149,12 +149,12 @@ export function SortableInitiativeRow({
 
               {(init.detailedStatus || (init.deliverables && init.deliverables.some(d => d.status !== 'done'))) && (
                 <div className="invisible group-hover:visible absolute top-full left-0 mt-3 p-3 bg-ss-navy text-white rounded-lg shadow-2xl z-[1000] w-72 pointer-events-none before:content-[''] before:absolute before:bottom-full before:left-6 before:border-8 before:border-transparent before:border-b-ss-navy">
-                  <div className="text-xs font-bold mb-2 border-b border-blue-400/30 pb-1 text-center truncate">{init.name}</div>
+                  <div className="text-sm font-bold mb-2 border-b border-blue-400/30 pb-1.5 text-center truncate">{init.name}</div>
 
                   {init.detailedStatus && (
                     <div className="mb-3 last:mb-0">
-                      <div className="text-blue-300 text-[9px] uppercase tracking-widest font-black mb-1 opacity-80 text-center">Current Focus</div>
-                      <div className="text-[10px] italic text-blue-50 leading-relaxed bg-blue-900/40 p-2 rounded-lg border border-blue-400/10 mb-2 text-left">
+                      <div className="text-blue-300 text-[11px] uppercase tracking-widest font-black mb-1 opacity-80 text-center">Current Focus</div>
+                      <div className="text-xs italic text-blue-50 leading-relaxed bg-blue-900/40 p-2.5 rounded-lg border border-blue-400/10 mb-2 text-left">
                         "{init.detailedStatus}"
                       </div>
                     </div>
@@ -163,18 +163,18 @@ export function SortableInitiativeRow({
                   {init.deliverables && init.deliverables.filter(d => d.status !== 'done').length > 0 && (
                     <div>
                       <div className="relative mb-1">
-                        <div className="text-emerald-400 text-[9px] uppercase tracking-widest font-black opacity-80 text-center">Next Deliverables</div>
-                        <div className="text-[9px] text-emerald-400/60 font-bold uppercase absolute right-0 top-0">[{init.deliverables.filter(d => d.status !== 'done').length}]</div>
+                        <div className="text-emerald-400 text-[11px] uppercase tracking-widest font-black opacity-80 text-center">Next Deliverables</div>
+                        <div className="text-[11px] text-emerald-400/60 font-bold uppercase absolute right-0 top-0">[{init.deliverables.filter(d => d.status !== 'done').length}]</div>
                       </div>
                       <div className="space-y-1.5">
                         {init.deliverables
                           .filter(d => d.status !== 'done')
                           .slice(0, 3)
                           .map((d, i) => (
-                            <div key={i} className="text-[10px] bg-white/5 p-1.5 rounded border border-white/10 flex justify-between items-center gap-2">
+                            <div key={i} className="text-xs bg-white/5 p-2 rounded border border-white/10 flex justify-between items-center gap-2">
                               <span className="truncate flex-1 font-medium text-left">{d.name}</span>
                               {d.date && (
-                                <span className="text-[9px] text-blue-300 font-bold whitespace-nowrap bg-blue-900/40 px-1 py-0.5 rounded border border-blue-400/20">
+                                <span className="text-[10px] text-blue-300 font-bold whitespace-nowrap bg-blue-900/40 px-1.5 py-0.5 rounded border border-blue-400/20">
                                   {format(new Date(d.date), 'MMM d')}
                                 </span>
                               )}

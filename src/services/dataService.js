@@ -257,6 +257,50 @@ class DataService {
     }
 
     /**
+     * Get activity feed for an initiative
+     */
+    async getInitiativeUpdates(initiativeId) {
+        try {
+            const { data, error } = await supabase
+                .from('initiative_updates')
+                .select('*')
+                .eq('initiative_id', initiativeId)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                if (error.code === 'PGRST116' || error.message.includes('not found')) return [];
+                throw error;
+            }
+            return data;
+        } catch (error) {
+            console.error('Error fetching initiative updates:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Create a new update in the activity feed
+     */
+    async createInitiativeUpdate(initiativeId, content) {
+        try {
+            const { data, error } = await supabase
+                .from('initiative_updates')
+                .insert([{
+                    initiative_id: initiativeId,
+                    content
+                }])
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('Error creating initiative update:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Create a new initiative
      */
     async createInitiative(name) {
@@ -298,10 +342,15 @@ class DataService {
             // Map common field names if necessary (e.g., techLead -> tech_lead)
             const dbUpdates = {};
             if ('techLead' in updates) dbUpdates.tech_lead = updates.techLead;
+            if ('TechLead' in updates) dbUpdates.tech_lead = updates.TechLead;
             if ('pm' in updates) dbUpdates.pm = updates.pm;
+            if ('PM' in updates) dbUpdates.pm = updates.PM;
             if ('ux' in updates) dbUpdates.ux = updates.ux;
+            if ('UX' in updates) dbUpdates.ux = updates.UX;
             if ('status' in updates) dbUpdates.status = updates.status;
+            if ('Status' in updates) dbUpdates.status = updates.Status;
             if ('group' in updates) dbUpdates.group = updates.group;
+            if ('Group' in updates) dbUpdates.group = updates.Group;
             if ('developers' in updates) dbUpdates.developers = updates.developers;
             if ('detailedStatus' in updates) dbUpdates.detailed_status = updates.detailedStatus;
             if ('name' in updates) dbUpdates.name = updates.name;

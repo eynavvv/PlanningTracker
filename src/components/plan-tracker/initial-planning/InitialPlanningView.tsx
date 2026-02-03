@@ -64,10 +64,12 @@ export function InitialPlanningView({ data, updateInitialPlanning }: InitialPlan
               className={`w-full px-2 py-1 border border-slate-200 dark:border-slate-600 rounded outline-none text-sm font-medium focus:ring-2 ${getStatusColor(planning.Status)}`}
             >
               <option value="">Select Status</option>
-              <option value="PRD">PRD</option>
-              <option value="Solutioning">Solutioning</option>
-              <option value="Release plan planning">Release plan planning</option>
-              <option value="Done">Done</option>
+              <option value="Pending">Pending</option>
+              <option value="Initiative Planning">Initiative Planning</option>
+              <option value="Release Planning">Release Planning</option>
+              <option value="Development">Development</option>
+              <option value="Released">Released</option>
+              <option value="Post Release">Post Release</option>
             </select>
           </div>
         </div>

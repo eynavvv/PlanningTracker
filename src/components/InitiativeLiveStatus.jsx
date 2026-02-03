@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { useReleaseData } from '../hooks/useReleaseData';
-import { Calendar, Clock, Plus, Trash2, Target, AlertCircle, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { Calendar, Clock, Plus, Trash2, Target, AlertCircle, ChevronDown, ChevronUp, Check, History, Send } from 'lucide-react';
 
 const InitiativeLiveStatus = () => {
-    const { data, updateInitiativeMeta, addDeliverable, updateDeliverable, deleteDeliverable } = useReleaseData();
+    const { data, updateInitiativeMeta, addDeliverable, updateDeliverable, deleteDeliverable, archiveDetailedStatus } = useReleaseData();
     const initiative = data?.Initiative || {};
     const [isAdding, setIsAdding] = useState(false);
     const [isExpanded, setIsExpanded] = useState(true);
     const [newDeliverableName, setNewDeliverableName] = useState('');
     const [newDeliverableDate, setNewDeliverableDate] = useState('');
+    const [isFeedExpanded, setIsFeedExpanded] = useState(false);
 
     const handleAddDeliverable = (e) => {
         if (e) e.preventDefault();
@@ -60,15 +61,16 @@ const InitiativeLiveStatus = () => {
                                                 'bg-slate-50 text-slate-700 border-slate-300'
                                     }`}
                             >
+                                <option value="Pending">Pending</option>
                                 <option value="Initiative Planning">Initiative Planning</option>
                                 <option value="Release Planning">Release Planning</option>
                                 <option value="Development">Development</option>
                                 <option value="Released">Released</option>
-                                <option value="On Hold">On Hold</option>
+                                <option value="Post Release">Post Release</option>
                             </select>
                         </div>
 
-                        <div>
+                        <div className="relative group/focus">
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5 px-1 underline decoration-slate-200 underline-offset-4">Current Focus / Detailed Status</label>
                             <textarea
                                 value={initiative.detailedStatus || ''}
@@ -76,17 +78,63 @@ const InitiativeLiveStatus = () => {
                                 className="w-full p-4 rounded-xl border-2 border-slate-100 text-sm italic text-slate-700 bg-slate-50/30 min-h-[140px] outline-none focus:border-ss-primary/50 focus:bg-white transition-all resize-none shadow-sm"
                                 placeholder="Type a quick summary..."
                             />
+                            {initiative.detailedStatus && initiative.detailedStatus.trim() && (
+                                <button
+                                    onClick={archiveDetailedStatus}
+                                    className="absolute bottom-3 right-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-3 py-1.5 text-xs font-bold flex items-center gap-1.5 shadow-lg transform transition-all active:scale-95 group-hover/focus:translate-y-0"
+                                    title="Archive this status to the Activity Feed"
+                                >
+                                    <Send className="w-3 h-3" />
+                                    Archive to Feed
+                                </button>
+                            )}
                         </div>
 
-                        <div className="bg-red-50/50 rounded-xl p-5 border-2 border-slate-900 border-dashed mt-auto">
-                            <div className="flex items-center gap-2 mb-2">
-                                <AlertCircle className="w-4 h-4 text-red-600" />
-                                <span className="text-[10px] font-black text-red-600 uppercase tracking-widest">Sync Reminder</span>
-                            </div>
-                            <p className="text-xs text-red-700 font-black leading-relaxed">
-                                Ensure all release plans below align with these primary target dates.
-                            </p>
+                        {/* Activity Feed Section */}
+                        <div className="flex flex-col gap-2">
+                            <button
+                                onClick={() => setIsFeedExpanded(!isFeedExpanded)}
+                                className="flex items-center justify-between px-2 py-1 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-blue-600 transition-colors"
+                            >
+                                <span className="flex items-center gap-2">
+                                    <History className="w-3 h-3" />
+                                    Activity Feed ({data?.updates?.length || 0})
+                                </span>
+                                {isFeedExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                            </button>
+
+                            {isFeedExpanded && (
+                                <div className="flex flex-col gap-3 max-h-[300px] overflow-auto pr-1 animate-in slide-in-from-top-2 duration-200">
+                                    {data?.updates?.length === 0 ? (
+                                        <div className="text-[10px] text-slate-400 italic px-2 py-4 text-center border-2 border-dashed border-slate-50 rounded-xl">
+                                            No archived updates yet.
+                                        </div>
+                                    ) : (
+                                        data.updates.map((update, idx) => (
+                                            <div key={update.id} className="relative pl-4 border-l-2 border-slate-100 py-1">
+                                                <div className="absolute -left-[5px] top-2 w-2 h-2 rounded-full bg-slate-200" />
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="text-[9px] font-bold text-slate-400">
+                                                        {new Date(update.created_at).toLocaleDateString(undefined, {
+                                                            month: 'short',
+                                                            day: 'numeric',
+                                                            year: 'numeric',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })}
+                                                    </span>
+                                                    <p className="text-xs text-slate-600 leading-relaxed italic whitespace-pre-wrap">
+                                                        {update.content}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            )}
                         </div>
+
+
                     </div>
 
                     {/* Column 2: Deliverables & Milestones */}

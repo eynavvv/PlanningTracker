@@ -66,6 +66,23 @@ const Dashboard = () => {
     useEffect(() => {
         loadInitiatives();
         loadTasks();
+
+        // Listen for real-time updates from other users
+        const handleRemoteUpdate = (event) => {
+            const table = event.detail?.table;
+            console.log(`Real-time update received for: ${table}`);
+
+            // Refresh relevant data based on table
+            if (table === 'tasks') {
+                loadTasks();
+            } else {
+                // For initiatives, release plans, etc.
+                loadInitiatives();
+            }
+        };
+
+        window.addEventListener('supabase-update', handleRemoteUpdate);
+        return () => window.removeEventListener('supabase-update', handleRemoteUpdate);
     }, []);
 
     const loadTasks = async () => {
@@ -123,7 +140,16 @@ const Dashboard = () => {
         setInitiatives(prev => prev.map(init =>
             init.id === id ? { ...init, [field]: value } : init
         ));
-        debouncedSync(id, field, value);
+
+        if (field === 'status' || field === 'Status') {
+            // Immediate sync for status
+            if (dataService.isConfigured()) {
+                dataService.updateInitiative(id, { [field]: value })
+                    .catch(err => console.error('Failed to sync to database:', err));
+            }
+        } else {
+            debouncedSync(id, field, value);
+        }
     };
 
     const handleReleasePhaseChange = async (initiativeId, releaseId, newStatus) => {
@@ -328,7 +354,7 @@ const Dashboard = () => {
         <div className="space-y-8">
             <DashboardHeader />
 
-            <TimelineView data={initiatives} onUpdateItem={handleTimelineUpdate} />
+            <TimelineView data={initiatives} roadmapFillers={tasks} onUpdateItem={handleTimelineUpdate} />
 
             {/* Filter and search hidden for now
             <InitiativeFilters
