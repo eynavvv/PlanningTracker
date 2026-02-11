@@ -17,7 +17,8 @@ import {
     isEqual
 } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronUp, Calendar, Info, Clock, Layers, Rocket } from 'lucide-react';
+import { ChevronDown, ChevronUp, Calendar, Info, Clock, Layers, Rocket, Eye, EyeOff } from 'lucide-react';
+import { getHolidaysInRange, getHolidayStyle } from '../utils/holidayUtils';
 
 // Team logo images
 const TEAM_LOGOS = {
@@ -29,6 +30,7 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
     const navigate = useNavigate();
     const [isExpanded, setIsExpanded] = useState(false);
     const [draggingItem, setDraggingItem] = useState(null); // { id, deltaDays, originalStartDate, originalEndDate }
+    const [showHolidays, setShowHolidays] = useState(true);
     const scrollContainerRef = useRef(null);
 
     // Process data into timeline items
@@ -226,6 +228,16 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
         currentWeek = addDays(currentWeek, 7);
     }
 
+    // Holiday bands
+    const holidays = getHolidaysInRange(range.min, range.max).map(h => {
+        const hStart = new Date(h.startDate);
+        const hEnd = new Date(h.endDate);
+        const left = getPosition(hStart);
+        const width = Math.max(getWidth(hStart, hEnd), dayWidth); // at least 1 day wide
+        const style = getHolidayStyle(h.category);
+        return { ...h, left, width, style };
+    });
+
     const today = new Date();
     const todayPos = isWithinInterval(today, { start: range.min, end: range.max }) ? getPosition(today) : null;
 
@@ -346,13 +358,43 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                         {timelineItems.length} PHASES
                     </span>
                 </div>
-                <div className="flex items-center gap-2 text-slate-400">
+                <div className="flex items-center gap-3 text-slate-400">
+                    {isExpanded && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setShowHolidays(v => !v); }}
+                            className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border transition-colors ${showHolidays ? 'bg-violet-50 text-violet-600 border-violet-200 hover:bg-violet-100' : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'}`}
+                            title={showHolidays ? 'Hide holidays' : 'Show holidays'}
+                        >
+                            {showHolidays ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                            Holidays
+                        </button>
+                    )}
                     <span className="text-xs font-medium">{isExpanded ? 'Collapse' : 'Expand Timeline'}</span>
                     {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </div>
             </button>
 
             {isExpanded && (
+                <div className="flex flex-col">
+                {/* Holiday Legend */}
+                {showHolidays && (
+                    <div className="flex items-center gap-4 px-6 py-1.5 border-b border-slate-100 bg-slate-50/60">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Holidays</span>
+                        {[
+                            { label: 'Major', category: 'major' },
+                            { label: 'Memorial', category: 'memorial' },
+                            { label: 'Minor', category: 'minor' },
+                        ].map(({ label, category }) => {
+                            const s = getHolidayStyle(category);
+                            return (
+                                <div key={category} className="flex items-center gap-1.5">
+                                    <div className={`w-2.5 h-2.5 rounded-sm ${s.dot}`} style={{ opacity: 0.7 }} />
+                                    <span className={`text-[10px] font-medium ${s.text}`}>{label}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
                 <div
                     ref={scrollContainerRef}
                     className="p-4 overflow-x-auto custom-scrollbar bg-white"
@@ -397,6 +439,47 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                                 </span>
                             </div>
                         ))}
+
+                        {/* Holiday Bands */}
+                        {showHolidays && holidays.map((h, idx) => {
+                            const isNarrow = h.width < 48;
+                            const isSingleDay = h.startDate === h.endDate;
+                            const dateLabel = isSingleDay
+                                ? format(new Date(h.startDate), 'MMM d, yyyy')
+                                : `${format(new Date(h.startDate), 'MMM d')} – ${format(new Date(h.endDate), 'MMM d, yyyy')}`;
+                            return (
+                                <div
+                                    key={`holiday-${idx}`}
+                                    className="absolute top-0 bottom-0 z-[1] pointer-events-none"
+                                    style={{
+                                        left: `${h.left}px`,
+                                        width: `${h.width}px`,
+                                        backgroundColor: h.style.bg,
+                                        borderLeft: `1px solid ${h.style.border}`,
+                                        borderRight: `1px solid ${h.style.border}`,
+                                    }}
+                                >
+                                    {/* Label with tooltip */}
+                                    <span
+                                        className={`absolute ${h.style.text} font-bold whitespace-nowrap select-none pointer-events-auto cursor-default group/holiday ${isNarrow ? 'text-[6px] writing-mode-vertical' : 'text-[7px]'}`}
+                                        style={{
+                                            top: isNarrow ? '56px' : '56px',
+                                            left: isNarrow ? '50%' : '2px',
+                                            ...(isNarrow
+                                                ? { writingMode: 'vertical-rl', textOrientation: 'mixed', transform: 'translateX(-50%)' }
+                                                : {}),
+                                        }}
+                                    >
+                                        {h.nameHe}
+                                        <span className="invisible group-hover/holiday:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1.5 bg-ss-navy text-white rounded-md shadow-xl z-[100] whitespace-nowrap pointer-events-none text-[10px] font-medium before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-ss-navy" style={{ writingMode: 'horizontal-tb', textOrientation: 'initial' }}>
+                                            <span className="font-bold">{h.name}</span>
+                                            <br />
+                                            {dateLabel}
+                                        </span>
+                                    </span>
+                                </div>
+                            );
+                        })}
 
                         {/* Today Line */}
                         {todayPos !== null && (
@@ -695,6 +778,7 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                             })}
                         </div>
                     </div>
+                </div>
                 </div>
             )}
         </div>
