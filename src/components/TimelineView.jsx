@@ -30,7 +30,7 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
     const navigate = useNavigate();
     const [isExpanded, setIsExpanded] = useState(false);
     const [draggingItem, setDraggingItem] = useState(null); // { id, deltaDays, originalStartDate, originalEndDate }
-    const [showHolidays, setShowHolidays] = useState(true);
+    const [showHolidays, setShowHolidays] = useState(false);
     const scrollContainerRef = useRef(null);
 
     // Process data into timeline items
@@ -346,15 +346,15 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
     }, [isExpanded, todayPos]);
 
     return (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6 transition-all duration-300">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden mb-6 transition-all duration-300">
             <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="w-full px-6 py-3 flex justify-between items-center bg-slate-50 border-b border-slate-200 hover:bg-slate-100 transition-colors"
+                className="w-full px-6 py-3 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
             >
                 <div className="flex items-center gap-3">
                     <Calendar className="w-5 h-5 text-ss-primary" />
-                    <h2 className="font-bold text-ss-navy">Release Timeline</h2>
-                    <span className="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded uppercase tracking-wider">
+                    <h2 className="font-bold text-ss-navy dark:text-white">Release Timeline</h2>
+                    <span className="text-[10px] bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold px-2 py-0.5 rounded uppercase tracking-wider">
                         {timelineItems.length} PHASES
                     </span>
                 </div>
@@ -362,7 +362,7 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                     {isExpanded && (
                         <button
                             onClick={(e) => { e.stopPropagation(); setShowHolidays(v => !v); }}
-                            className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border transition-colors ${showHolidays ? 'bg-violet-50 text-violet-600 border-violet-200 hover:bg-violet-100' : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'}`}
+                            className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border transition-colors ${showHolidays ? 'bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 border-violet-200 dark:border-violet-800 hover:bg-violet-100 dark:hover:bg-violet-900/50' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                             title={showHolidays ? 'Hide holidays' : 'Show holidays'}
                         >
                             {showHolidays ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
@@ -378,7 +378,7 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                 <div className="flex flex-col">
                 {/* Holiday Legend */}
                 {showHolidays && (
-                    <div className="flex items-center gap-4 px-6 py-1.5 border-b border-slate-100 bg-slate-50/60">
+                    <div className="flex items-center gap-4 px-6 py-1.5 border-b border-slate-100 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/60">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Holidays</span>
                         {[
                             { label: 'Major', category: 'major' },
@@ -397,23 +397,51 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                 )}
                 <div
                     ref={scrollContainerRef}
-                    className="p-4 overflow-x-auto custom-scrollbar bg-white"
+                    className="overflow-auto max-h-[75vh] custom-scrollbar bg-white dark:bg-slate-900"
                 >
                     <div
-                        className="relative pt-32 pb-6"
+                        className="relative"
                         style={{ width: `${timelineWidth}px`, minWidth: '100%' }}
                     >
-                        {/* Month Headers */}
+                        {/* Sticky Month & Week Headers */}
+                        <div className="sticky top-0 z-30 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 shadow-sm" style={{ height: '48px' }}>
+                            <div className="relative h-full">
+                                {/* Month Labels */}
+                                {monthMarkers.map((m, idx) => (
+                                    <div
+                                        key={`month-${idx}`}
+                                        className="absolute top-0 border-l border-slate-200 dark:border-slate-700 h-full"
+                                        style={{ left: `${m.left}px` }}
+                                    >
+                                        <span className="absolute top-1 left-2 text-xs font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                                            {m.label}
+                                        </span>
+                                    </div>
+                                ))}
+                                {/* Week Date Labels */}
+                                {weekMarkers.map((w, idx) => (
+                                    <div
+                                        key={`week-${idx}`}
+                                        className="absolute top-6 border-l border-slate-200 dark:border-slate-700 h-full z-0"
+                                        style={{ left: `${w.left}px` }}
+                                    >
+                                        <span className="absolute top-0 left-1 text-[8px] font-black text-slate-400 dark:text-slate-500 whitespace-nowrap bg-white/80 dark:bg-slate-900/80 px-1 rounded">
+                                            {w.label}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Timeline Content */}
+                        <div className="relative pb-6 pt-4">
+                        {/* Month Grid Lines */}
                         {monthMarkers.map((m, idx) => (
                             <div
-                                key={`month-${idx}`}
-                                className="absolute top-0 border-l border-slate-200 h-full"
+                                key={`month-line-${idx}`}
+                                className="absolute top-0 border-l border-slate-200 dark:border-slate-700 h-full"
                                 style={{ left: `${m.left}px` }}
-                            >
-                                <span className="absolute top-0 left-2 text-xs font-bold text-slate-500 whitespace-nowrap">
-                                    {m.label}
-                                </span>
-                            </div>
+                            />
                         ))}
 
                         {/* Week Alternating Backgrounds */}
@@ -421,23 +449,19 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                             idx % 2 === 0 && (
                                 <div
                                     key={`week-bg-${idx}`}
-                                    className="absolute top-6 bottom-0 bg-slate-50 opacity-40 -z-10"
+                                    className="absolute top-0 bottom-0 bg-slate-50 dark:bg-slate-800/50 opacity-40 -z-10"
                                     style={{ left: `${w.left}px`, width: `${w.width}px` }}
                                 />
                             )
                         ))}
 
-                        {/* Week Markers */}
+                        {/* Week Grid Lines */}
                         {weekMarkers.map((w, idx) => (
                             <div
-                                key={`week-${idx}`}
-                                className="absolute top-6 border-l border-slate-200 h-full z-0"
+                                key={`week-line-${idx}`}
+                                className="absolute top-0 border-l border-slate-200 dark:border-slate-700 h-full z-0"
                                 style={{ left: `${w.left}px` }}
-                            >
-                                <span className="absolute top-0 left-1 text-[8px] font-black text-slate-400 whitespace-nowrap bg-white/80 px-1 rounded">
-                                    {w.label}
-                                </span>
-                            </div>
+                            />
                         ))}
 
                         {/* Holiday Bands */}
@@ -463,7 +487,7 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                                     <span
                                         className={`absolute ${h.style.text} font-bold whitespace-nowrap select-none pointer-events-auto cursor-default group/holiday ${isNarrow ? 'text-[6px] writing-mode-vertical' : 'text-[7px]'}`}
                                         style={{
-                                            top: isNarrow ? '56px' : '56px',
+                                            top: isNarrow ? '8px' : '8px',
                                             left: isNarrow ? '50%' : '2px',
                                             ...(isNarrow
                                                 ? { writingMode: 'vertical-rl', textOrientation: 'mixed', transform: 'translateX(-50%)' }
@@ -488,12 +512,12 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                                 style={{ left: `${todayPos}px` }}
                                 title="Today"
                             >
-                                <span className="absolute top-1 -left-4 -translate-x-full text-[8px] font-black text-ss-action bg-white px-1 shadow-sm border border-ss-action/20">TODAY</span>
+                                <span className="absolute top-1 -left-4 -translate-x-full text-[8px] font-black text-ss-action bg-white dark:bg-slate-900 px-1 shadow-sm border border-ss-action/20">TODAY</span>
                             </div>
                         )}
 
                         {/* Bars */}
-                        <div className="flex flex-col gap-6 mt-8 relative z-0">
+                        <div className="flex flex-col gap-6 relative z-0">
                             {Object.entries(initiativeRows).map(([name, items], rowIdx) => {
                                 // Strict grouping: Initial Plan on row 0, then one row per Release
                                 const subRows = [];
@@ -564,13 +588,13 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                                 const teamLogo = isFillerRow ? null : TEAM_LOGOS[initiativeGroup];
 
                                 return (
-                                    <div key={name} className="relative flex flex-col gap-2 border-b border-slate-50 pb-2">
+                                    <div key={name} className="relative flex flex-col gap-2 border-b border-slate-50 dark:border-slate-800 pb-2">
                                         <div className="sticky left-0 z-10 flex items-center gap-2 mb-3 pl-0 py-1 w-fit max-w-[calc(100vw-300px)]">
                                             {/* Decorative Background for legibility when scrolling */}
-                                            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-transparent -z-10 rounded-r-xl" />
+                                            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-transparent dark:from-slate-900 dark:via-slate-900/95 dark:to-transparent -z-10 rounded-r-xl" />
 
                                             {/* Icon/Logo */}
-                                            <div className={`flex items-center justify-center w-7 h-7 rounded-full overflow-hidden shadow-sm border ${isFillerRow ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'border-slate-200'}`}>
+                                            <div className={`flex items-center justify-center w-7 h-7 rounded-full overflow-hidden shadow-sm border ${isFillerRow ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400' : 'border-slate-200 dark:border-slate-700'}`}>
                                                 {isFillerRow ? (
                                                     <Rocket className="w-4 h-4" />
                                                 ) : teamLogo ? (
@@ -580,16 +604,16 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                                                         className="w-full h-full object-cover"
                                                     />
                                                 ) : (
-                                                    <div className="w-full h-full bg-indigo-50 flex items-center justify-center text-indigo-600 text-xs font-bold">
+                                                    <div className="w-full h-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-xs font-bold">
                                                         {initiativeGroup?.charAt(0) || '?'}
                                                     </div>
                                                 )}
                                             </div>
                                             <div className="flex items-baseline gap-2">
-                                                <h3 className={`text-sm font-bold tracking-tight ${isFillerRow ? 'text-indigo-900' : 'text-slate-800'}`}>
+                                                <h3 className={`text-sm font-bold tracking-tight ${isFillerRow ? 'text-indigo-900 dark:text-indigo-300' : 'text-slate-800 dark:text-slate-100'}`}>
                                                     {name}
                                                 </h3>
-                                                <div className={`h-px w-12 self-center opacity-50 ${isFillerRow ? 'bg-indigo-200' : 'bg-slate-200'}`} />
+                                                <div className={`h-px w-12 self-center opacity-50 ${isFillerRow ? 'bg-indigo-200 dark:bg-indigo-800' : 'bg-slate-200 dark:bg-slate-700'}`} />
                                             </div>
                                         </div>
 
@@ -603,11 +627,11 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                                                     const width = getWidth(currentStartDate, currentEndDate);
 
                                                     const colorClass =
-                                                        item.type === 'initiative-planning' ? 'bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200' :
-                                                            item.type === 'release-pre-planning' ? 'bg-cyan-100 text-cyan-700 border-cyan-200 hover:bg-cyan-200' :
-                                                                item.type === 'release-planning' ? 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200' :
-                                                                    item.type === 'qa-event' ? 'bg-orange-100 text-orange-700 border-orange-300 hover:bg-orange-200' :
-                                                                        'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200';
+                                                        item.type === 'initiative-planning' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:bg-blue-200 dark:hover:bg-blue-900/70' :
+                                                            item.type === 'release-pre-planning' ? 'bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800 hover:bg-cyan-200 dark:hover:bg-cyan-900/70' :
+                                                                item.type === 'release-planning' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800 hover:bg-amber-200 dark:hover:bg-amber-900/70' :
+                                                                    item.type === 'qa-event' ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-800 hover:bg-orange-200 dark:hover:bg-orange-900/70' :
+                                                                        'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-200 dark:hover:bg-emerald-900/70';
 
                                                     // Render milestone (icon above with anchor dot on timeline)
                                                     if (item.isMilestone) {
@@ -777,6 +801,7 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                                 );
                             })}
                         </div>
+                        </div>{/* end Timeline Content */}
                     </div>
                 </div>
                 </div>

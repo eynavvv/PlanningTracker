@@ -27,7 +27,7 @@ const InitiativeLiveStatus = () => {
     };
 
     return (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden mb-6">
             <button
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="w-full px-6 py-3 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
@@ -50,15 +50,15 @@ const InitiativeLiveStatus = () => {
                     {/* Column 1: Overall Status & Focus */}
                     <div className="flex flex-col gap-6">
                         <div>
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5 px-1 underline decoration-slate-200 underline-offset-4">Overall Status</label>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5 px-1 underline decoration-slate-200 dark:decoration-slate-700 underline-offset-4">Overall Status</label>
                             <select
                                 value={initiative.Status || 'Initiative Planning'}
                                 onChange={(e) => updateInitiativeMeta('Status', e.target.value)}
-                                className={`w-full p-2.5 rounded-xl border-2 font-black text-sm transition-all focus:ring-4 focus:ring-ss-primary/10 outline-none ${initiative.Status === 'Initiative Planning' ? 'bg-blue-50 text-blue-700 border-blue-300' :
-                                    initiative.Status === 'Release Planning' ? 'bg-purple-50 text-purple-700 border-purple-300' :
-                                        initiative.Status === 'Development' ? 'bg-amber-50 text-amber-700 border-amber-300' :
-                                            initiative.Status === 'Released' ? 'bg-green-50 text-green-700 border-green-300' :
-                                                'bg-slate-50 text-slate-700 border-slate-300'
+                                className={`w-full p-2.5 rounded-xl border-2 font-black text-sm transition-all focus:ring-4 focus:ring-ss-primary/10 outline-none ${initiative.Status === 'Initiative Planning' ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-800' :
+                                    initiative.Status === 'Release Planning' ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-800' :
+                                        initiative.Status === 'Development' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800' :
+                                            initiative.Status === 'Released' ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-800' :
+                                                'bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600'
                                     }`}
                             >
                                 <option value="Pending">Pending</option>
@@ -71,11 +71,11 @@ const InitiativeLiveStatus = () => {
                         </div>
 
                         <div className="relative group/focus">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5 px-1 underline decoration-slate-200 underline-offset-4">Current Focus / Detailed Status</label>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5 px-1 underline decoration-slate-200 dark:decoration-slate-700 underline-offset-4">Current Focus / Detailed Status</label>
                             <textarea
                                 value={initiative.detailedStatus || ''}
                                 onChange={(e) => updateInitiativeMeta('detailedStatus', e.target.value)}
-                                className="w-full p-4 rounded-xl border-2 border-slate-100 text-sm italic text-slate-700 bg-slate-50/30 min-h-[140px] outline-none focus:border-ss-primary/50 focus:bg-white transition-all resize-none shadow-sm"
+                                className="w-full p-4 rounded-xl border-2 border-slate-100 dark:border-slate-700 text-sm italic text-slate-700 dark:text-slate-300 bg-slate-50/30 dark:bg-slate-800/30 min-h-[140px] outline-none focus:border-ss-primary/50 focus:bg-white dark:focus:bg-slate-700 transition-all resize-none shadow-sm"
                                 placeholder="Type a quick summary..."
                             />
                             {initiative.detailedStatus && initiative.detailedStatus.trim() && (
@@ -111,8 +111,8 @@ const InitiativeLiveStatus = () => {
                                         </div>
                                     ) : (
                                         data.updates.map((update, idx) => (
-                                            <div key={update.id} className="relative pl-4 border-l-2 border-slate-100 py-1">
-                                                <div className="absolute -left-[5px] top-2 w-2 h-2 rounded-full bg-slate-200" />
+                                            <div key={update.id} className="relative pl-4 border-l-2 border-slate-100 dark:border-slate-700 py-1">
+                                                <div className="absolute -left-[5px] top-2 w-2 h-2 rounded-full bg-slate-200 dark:bg-slate-600" />
                                                 <div className="flex flex-col gap-1">
                                                     <span className="text-[9px] font-bold text-slate-400">
                                                         {new Date(update.created_at).toLocaleDateString(undefined, {
@@ -123,7 +123,7 @@ const InitiativeLiveStatus = () => {
                                                             minute: '2-digit'
                                                         })}
                                                     </span>
-                                                    <p className="text-xs text-slate-600 leading-relaxed italic whitespace-pre-wrap">
+                                                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed italic whitespace-pre-wrap">
                                                         {update.content}
                                                     </p>
                                                 </div>
@@ -138,11 +138,11 @@ const InitiativeLiveStatus = () => {
                     </div>
 
                     {/* Column 2: Deliverables & Milestones */}
-                    <div className="flex flex-col gap-4 border-l border-slate-100 lg:pl-8">
+                    <div className="flex flex-col gap-4 border-l border-slate-100 dark:border-slate-700 lg:pl-8">
                         <div className="flex justify-between items-center px-1 mb-1">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                 Next Deliverables & Milestones
-                                <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded text-[9px] font-bold">{initiative.deliverables?.length || 0}</span>
+                                <span className="bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded text-[9px] font-bold">{initiative.deliverables?.length || 0}</span>
                             </label>
                             {!isAdding && (
                                 <button
@@ -163,7 +163,7 @@ const InitiativeLiveStatus = () => {
                                             value={newDeliverableName}
                                             onChange={(e) => setNewDeliverableName(e.target.value)}
                                             placeholder="What needs to be done?"
-                                            className="w-full text-sm p-2.5 rounded-lg border-2 border-slate-200 bg-white outline-none focus:border-ss-primary transition-all font-bold text-ss-navy"
+                                            className="w-full text-sm p-2.5 rounded-lg border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 outline-none focus:border-ss-primary transition-all font-bold text-ss-navy dark:text-slate-100"
                                         />
                                     </div>
                                     <div className="w-36">
@@ -171,7 +171,7 @@ const InitiativeLiveStatus = () => {
                                             type="date"
                                             value={newDeliverableDate}
                                             onChange={(e) => setNewDeliverableDate(e.target.value)}
-                                            className="w-full text-xs p-2.5 rounded-lg border-2 border-slate-200 bg-white text-ss-navy outline-none focus:border-ss-primary transition-all font-black"
+                                            className="w-full text-xs p-2.5 rounded-lg border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-ss-navy dark:text-slate-100 outline-none focus:border-ss-primary transition-all font-black"
                                         />
                                     </div>
                                     <div className="flex gap-2">
@@ -195,7 +195,7 @@ const InitiativeLiveStatus = () => {
                                         <button
                                             type="button"
                                             onClick={() => setIsAdding(false)}
-                                            className="w-10 h-10 rounded-xl flex items-center justify-center bg-white border-2 border-slate-200 text-slate-400 hover:text-slate-600"
+                                            className="w-10 h-10 rounded-xl flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                                         >
                                             ×
                                         </button>
@@ -205,7 +205,7 @@ const InitiativeLiveStatus = () => {
 
                             <div className="flex flex-col gap-3">
                                 {/* Headers */}
-                                <div className="flex items-center gap-4 px-4 text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
+                                <div className="flex items-center gap-4 px-4 text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700 pb-2">
                                     <div className="w-8"></div>
                                     <div className="flex-1">TASK / DELIVERABLE</div>
                                     <div className="w-36 text-center">DUE DATE</div>
@@ -219,7 +219,7 @@ const InitiativeLiveStatus = () => {
                                         if (!b.date) return -1;
                                         return new Date(a.date) - new Date(b.date);
                                     }).map((del) => (
-                                        <div key={del.id} className={`group bg-white border border-slate-100 p-2.5 rounded-xl flex items-center gap-3 hover:border-blue-200 hover:shadow-sm transition-all ${del.status === 'done' ? 'bg-slate-50/50' : ''}`}>
+                                        <div key={del.id} className={`group bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 p-2.5 rounded-xl flex items-center gap-3 hover:border-blue-200 dark:hover:border-blue-800 hover:shadow-sm transition-all ${del.status === 'done' ? 'bg-slate-50/50 dark:bg-slate-800/50' : ''}`}>
                                             <button
                                                 onClick={() => updateDeliverable(del.id, { status: del.status === 'done' ? 'pending' : 'done' })}
                                                 className={`w-7 h-7 max-w-[28px] max-h-[28px] rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${del.status === 'done'
@@ -235,18 +235,18 @@ const InitiativeLiveStatus = () => {
                                                 <input
                                                     value={del.name}
                                                     onChange={(e) => updateDeliverable(del.id, { name: e.target.value })}
-                                                    className={`w-full bg-transparent border-none p-0 text-sm font-black focus:ring-0 outline-none ${del.status === 'done' ? 'text-slate-400 line-through italic' : 'text-ss-navy'}`}
+                                                    className={`w-full bg-transparent border-none p-0 text-sm font-black focus:ring-0 outline-none ${del.status === 'done' ? 'text-slate-400 line-through italic' : 'text-ss-navy dark:text-white'}`}
                                                     placeholder="Deliverable name..."
                                                 />
                                             </div>
 
-                                            <div className="w-36 flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border-2 border-slate-100 group-hover:border-slate-300 transition-colors">
+                                            <div className="w-36 flex items-center gap-2 bg-slate-50 dark:bg-slate-800/50 px-3 py-2 rounded-xl border-2 border-slate-100 dark:border-slate-700 group-hover:border-slate-300 dark:group-hover:border-slate-600 transition-colors">
                                                 <Calendar className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
                                                 <input
                                                     type="date"
                                                     value={del.date || ''}
                                                     onChange={(e) => updateDeliverable(del.id, { date: e.target.value })}
-                                                    className="bg-transparent border-none p-0 text-[11px] font-black text-ss-navy focus:ring-0 outline-none cursor-pointer w-full text-center"
+                                                    className="bg-transparent border-none p-0 text-[11px] font-black text-ss-navy dark:text-white focus:ring-0 outline-none cursor-pointer w-full text-center"
                                                 />
                                             </div>
 

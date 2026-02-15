@@ -18,12 +18,12 @@ const Sidebar = () => {
             <div className="p-6 border-b border-slate-800 flex items-center justify-between">
                 {!isCollapsed && (
                     <div className="flex items-center gap-3">
-                        <img src="/logo.png" alt="Logo" className="w-12 h-12 rounded" />
+                        <img src="/logo.png" alt="Logo" className="w-12 h-12 rounded brightness-0 invert" />
                         <span className="font-bold text-white text-xl tracking-tight">SundaySky</span>
                     </div>
                 )}
                 {isCollapsed && (
-                    <img src="/logo.png" alt="Logo" className="w-10 h-10 rounded mx-auto" />
+                    <img src="/logo.png" alt="Logo" className="w-10 h-10 rounded mx-auto brightness-0 invert" />
                 )}
             </div>
 
