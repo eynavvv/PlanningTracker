@@ -32,6 +32,16 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
     const [draggingItem, setDraggingItem] = useState(null); // { id, deltaDays, originalStartDate, originalEndDate }
     const [showHolidays, setShowHolidays] = useState(false);
     const scrollContainerRef = useRef(null);
+    const [shouldFlipTooltip, setShouldFlipTooltip] = useState(false);
+
+    const handleTooltipHover = (e) => {
+        const container = scrollContainerRef.current;
+        if (!container) return;
+        const containerRect = container.getBoundingClientRect();
+        const elemRect = e.currentTarget.getBoundingClientRect();
+        const spaceAbove = elemRect.top - containerRect.top;
+        setShouldFlipTooltip(spaceAbove < 200);
+    };
 
     // Process data into timeline items
     const timelineItems = useMemo(() => {
@@ -486,6 +496,7 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                                     {/* Label with tooltip */}
                                     <span
                                         className={`absolute ${h.style.text} font-bold whitespace-nowrap select-none pointer-events-auto cursor-default group/holiday ${isNarrow ? 'text-[6px] writing-mode-vertical' : 'text-[7px]'}`}
+                                        onMouseEnter={handleTooltipHover}
                                         style={{
                                             top: isNarrow ? '8px' : '8px',
                                             left: isNarrow ? '50%' : '2px',
@@ -495,7 +506,7 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                                         }}
                                     >
                                         {h.nameHe}
-                                        <span className="invisible group-hover/holiday:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1.5 bg-ss-navy text-white rounded-md shadow-xl z-[100] whitespace-nowrap pointer-events-none text-[10px] font-medium before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-ss-navy" style={{ writingMode: 'horizontal-tb', textOrientation: 'initial' }}>
+                                        <span className={`invisible group-hover/holiday:visible absolute ${shouldFlipTooltip ? 'top-full mt-1.5' : 'bottom-full mb-1.5'} left-1/2 -translate-x-1/2 px-2.5 py-1.5 bg-ss-navy text-white rounded-md shadow-xl z-[100] whitespace-nowrap pointer-events-none text-[10px] font-medium before:content-[''] before:absolute ${shouldFlipTooltip ? 'before:bottom-full before:border-b-ss-navy' : 'before:top-full before:border-t-ss-navy'} before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent`} style={{ writingMode: 'horizontal-tb', textOrientation: 'initial' }}>
                                             <span className="font-bold">{h.name}</span>
                                             <br />
                                             {dateLabel}
@@ -618,7 +629,7 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                                         </div>
 
                                         {subRows.map((rowItems, subRowIdx) => (
-                                            <div key={`${name}-subrow-${subRowIdx}`} className="relative h-8 w-full">
+                                            <div key={`${name}-subrow-${subRowIdx}`} className="relative h-8 w-full" style={{ overflow: 'visible' }}>
                                                 {rowItems.map(item => {
                                                     const isDragging = draggingItem?.id === item.id;
                                                     const currentStartDate = isDragging ? draggingItem.tempStartDate : item.startDate;
@@ -646,8 +657,9 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                                                         return (
                                                             <div
                                                                 key={item.id}
-                                                                className="absolute h-8 flex items-center group z-20"
+                                                                className="absolute h-8 flex items-center group z-20 hover:z-[9999]"
                                                                 style={{ left: `${left}px` }}
+                                                                onMouseEnter={handleTooltipHover}
                                                             >
                                                                 {/* Container for icon above + connector + anchor */}
                                                                 <div className="relative flex flex-col items-center">
@@ -684,7 +696,7 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                                                                 </div>
 
                                                                 {/* Tooltip */}
-                                                                <div className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-12 p-3 bg-ss-navy text-white rounded-lg shadow-xl z-[100] w-64 pointer-events-none before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-8 before:border-transparent before:border-t-ss-navy">
+                                                                <div className={`invisible group-hover:visible absolute ${shouldFlipTooltip ? 'top-full mt-4' : 'bottom-full mb-12'} left-1/2 -translate-x-1/2 p-3 bg-ss-navy text-white rounded-lg shadow-xl z-[100] w-64 pointer-events-none before:content-[''] before:absolute ${shouldFlipTooltip ? 'before:bottom-full before:border-b-ss-navy' : 'before:top-full before:border-t-ss-navy'} before:left-1/2 before:-translate-x-1/2 before:border-8 before:border-transparent`}>
                                                                     <div className="text-sm font-bold mb-2 border-b border-blue-400/30 pb-1.5 text-center truncate">{item.name}</div>
                                                                     <div className="flex flex-col gap-2 text-xs">
                                                                         <div className="text-center">
@@ -704,7 +716,8 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                                                         <div
                                                             key={item.id}
                                                             onMouseDown={(e) => handleDragStart(e, item, 'move')}
-                                                            className={`absolute h-8 rounded-lg border flex items-center px-3 text-[10px] font-bold transition-all cursor-grab active:cursor-grabbing group shadow-sm ${colorClass} ${isDragging ? 'z-50 ring-2 ring-ss-primary shadow-lg scale-[1.02] opacity-90' : 'z-10'}`}
+                                                            onMouseEnter={handleTooltipHover}
+                                                            className={`absolute h-8 rounded-lg border flex items-center px-3 text-[10px] font-bold transition-all cursor-grab active:cursor-grabbing group shadow-sm hover:z-[9999] ${colorClass} ${isDragging ? 'z-50 ring-2 ring-ss-primary shadow-lg scale-[1.02] opacity-90' : 'z-10'}`}
                                                             style={{ left: `${left}px`, width: `${width}px` }}
                                                         >
                                                             {/* Left Resize Handle */}
@@ -740,7 +753,7 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                                                             />
 
                                                             {/* Tooltip */}
-                                                            <div className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-4 p-3 bg-ss-navy text-white rounded-lg shadow-2xl z-[500] w-80 pointer-events-none before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-8 before:border-transparent before:border-t-ss-navy">
+                                                            <div className={`invisible group-hover:visible absolute ${shouldFlipTooltip ? 'top-full mt-4' : 'bottom-full mb-4'} left-1/2 -translate-x-1/2 p-3 bg-ss-navy text-white rounded-lg shadow-2xl z-[500] w-80 pointer-events-none before:content-[''] before:absolute ${shouldFlipTooltip ? 'before:bottom-full before:border-b-ss-navy' : 'before:top-full before:border-t-ss-navy'} before:left-1/2 before:-translate-x-1/2 before:border-8 before:border-transparent`}>
                                                                 <div className="text-sm font-bold mb-2 border-b border-blue-400/30 pb-1.5 text-center truncate">{item.name}</div>
                                                                 <div className="flex flex-col gap-2.5 text-xs">
                                                                     <div className="flex items-center justify-between bg-blue-900/40 px-2.5 py-1.5 rounded border border-blue-400/10 text-[10px]">
