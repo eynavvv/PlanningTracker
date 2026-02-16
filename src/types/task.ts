@@ -16,8 +16,24 @@ export interface Task {
   jira_link?: string;
   phase: TaskPhase;
   display_order: number;
+  detailed_status?: string;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface TaskDeliverable {
+  id: string;
+  task_id: string;
+  name: string;
+  date?: string;
+  status: 'pending' | 'done';
+}
+
+export interface TaskUpdate {
+  id: string;
+  task_id: string;
+  content: string;
+  created_at: string;
 }
 
 export interface CreateTaskInput {
@@ -47,6 +63,7 @@ export interface UpdateTaskInput {
   jira_link?: string;
   phase?: TaskPhase;
   display_order?: number;
+  detailed_status?: string;
 }
 
 export const TASK_TYPE_OPTIONS: TaskType[] = ['Dev', 'POC', 'Research'];

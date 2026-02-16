@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useReleaseData } from '../hooks/useReleaseData';
-import { Calendar, Clock, Plus, Trash2, Target, AlertCircle, ChevronDown, ChevronUp, Check, History, Send } from 'lucide-react';
+import { Calendar, Clock, Plus, X, Trash2, Target, AlertCircle, ChevronDown, ChevronUp, Check, History, Send } from 'lucide-react';
 
 const InitiativeLiveStatus = () => {
     const { data, updateInitiativeMeta, addDeliverable, updateDeliverable, deleteDeliverable, archiveDetailedStatus } = useReleaseData();
@@ -75,17 +75,16 @@ const InitiativeLiveStatus = () => {
                             <textarea
                                 value={initiative.detailedStatus || ''}
                                 onChange={(e) => updateInitiativeMeta('detailedStatus', e.target.value)}
-                                className="w-full p-4 rounded-xl border-2 border-slate-100 dark:border-slate-700 text-sm italic text-slate-700 dark:text-slate-300 bg-slate-50/30 dark:bg-slate-800/30 min-h-[140px] outline-none focus:border-ss-primary/50 focus:bg-white dark:focus:bg-slate-700 transition-all resize-none shadow-sm"
+                                className="peer w-full p-4 rounded-xl border-2 border-slate-100 dark:border-slate-700 text-sm italic text-slate-700 dark:text-slate-300 bg-slate-50/30 dark:bg-slate-800/30 min-h-[140px] outline-none focus:border-ss-primary/50 focus:bg-white dark:focus:bg-slate-700 transition-all resize-none shadow-sm"
                                 placeholder="Type a quick summary..."
                             />
                             {initiative.detailedStatus && initiative.detailedStatus.trim() && (
                                 <button
                                     onClick={archiveDetailedStatus}
-                                    className="absolute bottom-3 right-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-3 py-1.5 text-xs font-bold flex items-center gap-1.5 shadow-lg transform transition-all active:scale-95 group-hover/focus:translate-y-0"
-                                    title="Archive this status to the Activity Feed"
+                                    className="absolute bottom-3 right-3 text-slate-300 hover:text-slate-500 dark:text-slate-600 dark:hover:text-slate-400 rounded-lg p-1.5 transition-colors opacity-0 group-hover/focus:opacity-100 peer-focus:!opacity-0 peer-focus:pointer-events-none"
+                                    title="Archive this status to the Activity Feed and clear"
                                 >
-                                    <Send className="w-3 h-3" />
-                                    Archive to Feed
+                                    <Send className="w-3.5 h-3.5" />
                                 </button>
                             )}
                         </div>
@@ -174,30 +173,23 @@ const InitiativeLiveStatus = () => {
                                             className="w-full text-xs p-2.5 rounded-lg border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-ss-navy dark:text-slate-100 outline-none focus:border-ss-primary transition-all font-black"
                                         />
                                     </div>
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-2 flex-shrink-0">
                                         <button
                                             type="submit"
                                             disabled={!newDeliverableName}
-                                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${!newDeliverableName
-                                                ? 'bg-slate-200 border-2 border-slate-200'
-                                                : 'bg-blue-600 hover:bg-blue-700 shadow-sm'
+                                            className={`w-10 h-10 min-w-[40px] rounded-xl flex items-center justify-center transition-all overflow-visible ${!newDeliverableName
+                                                ? 'bg-slate-200 border-2 border-slate-200 text-slate-400'
+                                                : 'bg-blue-600 hover:bg-blue-700 shadow-sm text-white'
                                                 }`}
                                         >
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                viewBox="0 0 24 24"
-                                                fill={!newDeliverableName ? '#94a3b8' : 'white'}
-                                                className="w-5 h-5"
-                                            >
-                                                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-                                            </svg>
+                                            <Plus className="w-5 h-5 flex-shrink-0" />
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => setIsAdding(false)}
-                                            className="w-10 h-10 rounded-xl flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                                            className="w-10 h-10 min-w-[40px] rounded-xl flex items-center justify-center bg-white dark:bg-slate-700 border-2 border-slate-200 dark:border-slate-600 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                                         >
-                                            ×
+                                            <X className="w-5 h-5 flex-shrink-0" />
                                         </button>
                                     </div>
                                 </form>

@@ -41,4 +41,18 @@ export const queryKeys = {
     byInitiative: (initiativeId: string) =>
       [...queryKeys.deliverables.all, initiativeId] as const,
   },
+
+  // Task Deliverables
+  taskDeliverables: {
+    all: ['taskDeliverables'] as const,
+    byTask: (taskId: string) =>
+      [...queryKeys.taskDeliverables.all, taskId] as const,
+  },
+
+  // Task Updates
+  taskUpdates: {
+    all: ['taskUpdates'] as const,
+    byTask: (taskId: string) =>
+      [...queryKeys.taskUpdates.all, taskId] as const,
+  },
 } as const;

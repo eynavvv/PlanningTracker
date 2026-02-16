@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
-import { Plus, Trash2, GripVertical, ExternalLink, Calendar, Layers, ChevronDown, ChevronUp, Pencil } from 'lucide-react';
+import { Plus, Trash2, GripVertical, ExternalLink, Calendar, Layers, ChevronDown, ChevronUp, Pencil, Activity } from 'lucide-react';
+import TaskLiveStatus from '@/components/TaskLiveStatus';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
@@ -40,6 +41,7 @@ interface SortableTaskRowProps {
 function SortableTaskRow({ task, onDelete, onUpdate }: SortableTaskRowProps) {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const {
     attributes,
@@ -123,20 +125,30 @@ function SortableTaskRow({ task, onDelete, onUpdate }: SortableTaskRowProps) {
   };
 
   return (
+    <>
     <tr
       ref={setNodeRef}
       style={style}
       className={`hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${isDragging ? 'bg-white dark:bg-slate-800 shadow-lg opacity-80' : ''}`}
     >
       <td className="w-10 px-4">
-        <button
-          {...attributes}
-          {...listeners}
-          className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:text-blue-600 cursor-grab active:cursor-grabbing transition-colors"
-          title="Drag to reorder"
-        >
-          <GripVertical className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            {...attributes}
+            {...listeners}
+            className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:text-blue-600 cursor-grab active:cursor-grabbing transition-colors"
+            title="Drag to reorder"
+          >
+            <GripVertical className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className={`p-1 rounded-lg transition-colors ${isExpanded ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+            title={isExpanded ? 'Collapse live status' : 'Expand live status'}
+          >
+            {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <Activity className="w-3.5 h-3.5" />}
+          </button>
+        </div>
       </td>
       <td className="px-6 py-4">
         {editingField === 'name' ? (
@@ -299,6 +311,18 @@ function SortableTaskRow({ task, onDelete, onUpdate }: SortableTaskRowProps) {
         </button>
       </td>
     </tr>
+    {isExpanded && (
+      <tr>
+        <td colSpan={9} className="p-0">
+          <TaskLiveStatus
+            taskId={task.id}
+            initialDetailedStatus={task.detailed_status}
+            onUpdateDetailedStatus={(value) => onUpdate(task.id, 'detailed_status', value)}
+          />
+        </td>
+      </tr>
+    )}
+    </>
   );
 }
 

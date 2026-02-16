@@ -75,6 +75,20 @@ export function useRealtimeSync() {
           broadcastChange('initiative_updates');
         }
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'task_deliverables' },
+        (payload: RealtimePayload) => {
+          handleTaskDeliverableChange(payload, queryClient);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'task_updates' },
+        (payload: RealtimePayload) => {
+          handleTaskUpdateChange(payload, queryClient);
+        }
+      )
       .subscribe();
 
     return () => {
@@ -184,6 +198,34 @@ function handleEpicChange(
   }
 
   window.dispatchEvent(new CustomEvent('supabase-update', { detail: { table: 'epics' } }));
+}
+
+function handleTaskDeliverableChange(
+  payload: RealtimePayload,
+  queryClient: ReturnType<typeof useQueryClient>
+) {
+  const { new: newData, old: oldData } = payload;
+  const taskId = (newData?.task_id || oldData?.task_id) as string;
+
+  if (taskId) {
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.taskDeliverables.byTask(taskId),
+    });
+  }
+}
+
+function handleTaskUpdateChange(
+  payload: RealtimePayload,
+  queryClient: ReturnType<typeof useQueryClient>
+) {
+  const { new: newData, old: oldData } = payload;
+  const taskId = (newData?.task_id || oldData?.task_id) as string;
+
+  if (taskId) {
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.taskUpdates.byTask(taskId),
+    });
+  }
 }
 
 // Global broadcast to notify manual state components

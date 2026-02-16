@@ -816,6 +816,124 @@ class DataService {
         }
     }
 
+    // ==========================================
+    // Task Deliverables CRUD
+    // ==========================================
+
+    async getTaskDeliverables(taskId) {
+        try {
+            const { data, error } = await supabase
+                .from('task_deliverables')
+                .select('*')
+                .eq('task_id', taskId)
+                .order('date', { ascending: true });
+
+            if (error) {
+                if (error.code === 'PGRST116' || error.message.includes('not found')) return [];
+                throw error;
+            }
+            return data.map(d => ({
+                id: d.id,
+                task_id: d.task_id,
+                name: d.name,
+                date: d.date,
+                status: d.status || 'pending'
+            }));
+        } catch (error) {
+            console.error('Error fetching task deliverables:', error);
+            return [];
+        }
+    }
+
+    async createTaskDeliverable(taskId, deliverable) {
+        try {
+            const { data, error } = await supabase
+                .from('task_deliverables')
+                .insert([{
+                    task_id: taskId,
+                    name: deliverable.name,
+                    date: deliverable.date || null,
+                    status: deliverable.status || 'pending'
+                }])
+                .select()
+                .single();
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('Error creating task deliverable:', error);
+            throw error;
+        }
+    }
+
+    async updateTaskDeliverable(id, updates) {
+        try {
+            const { error } = await supabase
+                .from('task_deliverables')
+                .update(updates)
+                .eq('id', id);
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error('Error updating task deliverable:', error);
+            throw error;
+        }
+    }
+
+    async deleteTaskDeliverable(id) {
+        try {
+            const { error } = await supabase
+                .from('task_deliverables')
+                .delete()
+                .eq('id', id);
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error('Error deleting task deliverable:', error);
+            throw error;
+        }
+    }
+
+    // ==========================================
+    // Task Updates (Activity Feed) CRUD
+    // ==========================================
+
+    async getTaskUpdates(taskId) {
+        try {
+            const { data, error } = await supabase
+                .from('task_updates')
+                .select('*')
+                .eq('task_id', taskId)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                if (error.code === 'PGRST116' || error.message.includes('not found')) return [];
+                throw error;
+            }
+            return data;
+        } catch (error) {
+            console.error('Error fetching task updates:', error);
+            return [];
+        }
+    }
+
+    async createTaskUpdate(taskId, content) {
+        try {
+            const { data, error } = await supabase
+                .from('task_updates')
+                .insert([{
+                    task_id: taskId,
+                    content
+                }])
+                .select()
+                .single();
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('Error creating task update:', error);
+            throw error;
+        }
+    }
+
     isConfigured() {
         return !!(supabaseUrl && supabaseAnonKey);
     }
