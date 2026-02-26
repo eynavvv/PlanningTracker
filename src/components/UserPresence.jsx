@@ -17,15 +17,17 @@ const UserPresence = () => {
             },
         });
 
-        channel
-            .on('presence', { event: 'sync' }, () => {
-                const newState = channel.presenceState();
-                const users = Object.values(newState).flat().map(presence => presence.user_info);
+        const syncUsers = () => {
+            const newState = channel.presenceState();
+            const users = Object.values(newState).flat().map(presence => presence.user_info);
+            const uniqueUsers = Array.from(new Map(users.map(u => [u.id, u])).values());
+            setOnlineUsers(uniqueUsers);
+        };
 
-                // Deduplicate users by ID
-                const uniqueUsers = Array.from(new Map(users.map(u => [u.id, u])).values());
-                setOnlineUsers(uniqueUsers);
-            })
+        channel
+            .on('presence', { event: 'sync' }, syncUsers)
+            .on('presence', { event: 'join' }, syncUsers)
+            .on('presence', { event: 'leave' }, syncUsers)
             .subscribe(async (status) => {
                 if (status === 'SUBSCRIBED') {
                     await channel.track({
@@ -40,13 +42,14 @@ const UserPresence = () => {
             });
 
         return () => {
-            channel.unsubscribe();
+            supabase.removeChannel(channel);
         };
     }, [user]);
 
     if (onlineUsers.length === 0) return null;
 
     return (
+        <div className="flex items-center gap-4">
         <div className="flex -space-x-2 overflow-hidden items-center">
             {onlineUsers.map((onlineUser) => (
                 <div
@@ -74,6 +77,8 @@ const UserPresence = () => {
                     <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-800 shadow-sm" />
                 </div>
             ))}
+        </div>
+        <div className="w-px h-6 bg-slate-200 dark:bg-slate-700" />
         </div>
     );
 };
