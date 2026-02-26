@@ -26,7 +26,7 @@ const TEAM_LOGOS = {
     Zebra: '/zebra-logo.png'
 };
 
-const TimelineView = ({ data, roadmapFillers, onUpdateItem, defaultExpanded = false, fullPage = false }) => {
+const TimelineView = ({ data, roadmapFillers, onUpdateItem, onFillerClick, defaultExpanded = false, fullPage = false }) => {
     const navigate = useNavigate();
     const [isExpanded, setIsExpanded] = useState(defaultExpanded);
     const [draggingItem, setDraggingItem] = useState(null); // { id, deltaDays, originalStartDate, originalEndDate }
@@ -36,13 +36,21 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem, defaultExpanded = fa
     const scrollContainerRef = useRef(null);
     const filterRefs = useRef({});
     const [tooltip, setTooltip] = useState(null);
+    const tooltipTimerRef = useRef(null);
 
     const showTooltip = (e, content) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const flipUp = rect.top > window.innerHeight * 0.55;
-        setTooltip({ x: rect.left + rect.width / 2, y: flipUp ? rect.top - 12 : rect.bottom + 12, flipUp, content });
+        const target = e.currentTarget;
+        clearTimeout(tooltipTimerRef.current);
+        tooltipTimerRef.current = setTimeout(() => {
+            const rect = target.getBoundingClientRect();
+            const flipUp = rect.top > window.innerHeight * 0.55;
+            setTooltip({ x: rect.left + rect.width / 2, y: flipUp ? rect.top - 12 : rect.bottom + 12, flipUp, content });
+        }, 500);
     };
-    const hideTooltip = () => setTooltip(null);
+    const hideTooltip = () => {
+        clearTimeout(tooltipTimerRef.current);
+        setTooltip(null);
+    };
 
     const toggleFilter = (key, value) => {
         setFilters(prev => ({
@@ -188,6 +196,7 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem, defaultExpanded = fa
                         markerType: 'filler',
                         initiativeName: 'Roadmap Fillers',
                         initiativeId: 'roadmap-fillers',
+                        fillerId: filler.id,
                         group: filler.group || 'General',
                         detailedStatus: filler.description,
                         isFiller: true
@@ -396,7 +405,9 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem, defaultExpanded = fa
     };
 
     const handleItemClick = (item) => {
-        if (item.type === 'initiative-planning') {
+        if (item.type === 'roadmap-filler') {
+            onFillerClick?.(item.fillerId);
+        } else if (item.type === 'initiative-planning') {
             navigate(`/plan/${encodeURIComponent(item.initiativeId)}?view=initial_planning`);
         } else {
             navigate(`/plan/${encodeURIComponent(item.initiativeId)}?view=release_plans`);
@@ -695,12 +706,12 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem, defaultExpanded = fa
                                     sortedItems.forEach(item => {
                                         let placed = false;
                                         for (const row of rows) {
-                                            // Check if item overlaps with any item in this row (with 5 day padding for visibility)
+                                            // 1-day padding on both sides so icons (24px) at 24px/day don't visually overlap
                                             const overlaps = row.some(rowItem => {
-                                                const startA = subDays(item.startDate, 5);
-                                                const endA = addDays(item.endDate, 5);
-                                                const startB = rowItem.startDate;
-                                                const endB = rowItem.endDate;
+                                                const startA = subDays(item.startDate, 1);
+                                                const endA = addDays(item.endDate, 1);
+                                                const startB = subDays(rowItem.startDate, 1);
+                                                const endB = addDays(rowItem.endDate, 1);
                                                 return isBefore(startA, endB) && isAfter(endA, startB);
                                             });
 
@@ -807,14 +818,14 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem, defaultExpanded = fa
                                                         const borderColor = isFiller ? 'border-indigo-300' : 'border-orange-300';
                                                         const anchorColor = isFiller ? 'bg-indigo-500' : 'bg-orange-500';
 
-                                                        const isQaEvent = item.type === 'qa-event';
+                                                        const isDraggableMilestone = item.type === 'qa-event' || item.type === 'roadmap-filler';
 
                                                         return (
                                                             <div
                                                                 key={item.id}
-                                                                className={`absolute h-8 flex items-center z-20 ${isQaEvent ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                                                                className={`absolute h-8 flex items-center z-20 ${isDraggableMilestone ? 'cursor-grab active:cursor-grabbing' : ''}`}
                                                                 style={{ left: `${left}px` }}
-                                                                onMouseDown={isQaEvent ? (e) => { hideTooltip(); handleDragStart(e, item, 'move'); } : undefined}
+                                                                onMouseDown={isDraggableMilestone ? (e) => { hideTooltip(); handleDragStart(e, item, 'move'); } : undefined}
                                                                 onMouseEnter={(e) => showTooltip(e,
                                                                     <div className="p-3 bg-ss-navy text-white rounded-lg shadow-xl w-64">
                                                                         <div className="text-sm font-bold mb-2 border-b border-blue-400/30 pb-1.5 text-center truncate">{item.name}</div>
@@ -827,7 +838,7 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem, defaultExpanded = fa
                                                                                 <div className="mt-1 text-xs text-blue-100 opacity-80 italic line-clamp-2">"{item.detailedStatus}"</div>
                                                                             )}
                                                                         </div>
-                                                                        {isQaEvent && (
+                                                                        {isDraggableMilestone && (
                                                                             <div className="mt-3 pt-2 border-t border-blue-400/20 text-[8px] text-blue-300 uppercase tracking-widest font-black text-center opacity-40">
                                                                                 DRAG TO MOVE
                                                                             </div>

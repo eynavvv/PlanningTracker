@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { Plus, Trash2, GripVertical, ExternalLink, Calendar, Layers, ChevronDown, ChevronUp, Pencil, Activity } from 'lucide-react';
 import TaskLiveStatus from '@/components/TaskLiveStatus';
@@ -30,18 +30,28 @@ interface RoadmapFillersProps {
   onReorderTasks: (orderedIds: string[]) => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  highlightedTaskId?: string | null;
 }
 
 interface SortableTaskRowProps {
   task: Task;
   onDelete: (id: string, name: string) => void;
   onUpdate: (id: string, field: string, value: string | string[]) => void;
+  isHighlighted?: boolean;
 }
 
-function SortableTaskRow({ task, onDelete, onUpdate }: SortableTaskRowProps) {
+function SortableTaskRow({ task, onDelete, onUpdate, isHighlighted = false }: SortableTaskRowProps) {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
+  const rowRef = useRef<HTMLTableRowElement>(null);
+
+  useEffect(() => {
+    if (isHighlighted) {
+      setIsExpanded(true);
+      rowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [isHighlighted]);
 
   const {
     attributes,
@@ -127,9 +137,9 @@ function SortableTaskRow({ task, onDelete, onUpdate }: SortableTaskRowProps) {
   return (
     <>
     <tr
-      ref={setNodeRef}
+      ref={(el) => { setNodeRef(el); (rowRef as React.MutableRefObject<HTMLTableRowElement | null>).current = el; }}
       style={style}
-      className={`hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${isDragging ? 'bg-white dark:bg-slate-800 shadow-lg opacity-80' : ''}`}
+      className={`hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${isDragging ? 'bg-white dark:bg-slate-800 shadow-lg opacity-80' : ''} ${isHighlighted ? 'bg-blue-50 dark:bg-blue-900/20 outline outline-2 outline-blue-400 outline-offset-[-2px]' : ''}`}
     >
       <td className="w-10 px-4">
         <div className="flex items-center gap-1">
@@ -334,6 +344,7 @@ export function RoadmapFillers({
   onReorderTasks,
   isCollapsed = false,
   onToggleCollapse,
+  highlightedTaskId,
 }: RoadmapFillersProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -428,6 +439,7 @@ export function RoadmapFillers({
                           task={task}
                           onDelete={onDeleteTask}
                           onUpdate={onUpdateTask}
+                          isHighlighted={highlightedTaskId === task.id}
                         />
                       ))
                     )}

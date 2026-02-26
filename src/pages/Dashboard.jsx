@@ -36,6 +36,7 @@ const Dashboard = () => {
     const [tasks, setTasks] = useState([]);
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('timeline');
+    const [highlightedFillerId, setHighlightedFillerId] = useState(null);
     const navigate = useNavigate();
     const syncTimeoutRef = useRef({});
 
@@ -291,6 +292,15 @@ const Dashboard = () => {
                 await dataService.updateReleasePlan(item.initiativeId, item.releaseId, {
                     qaEventDate: startDateStr
                 });
+            } else if (item.type === 'roadmap-filler') {
+                await dataService.updateTask(item.fillerId, { target_date: startDateStr });
+            }
+
+            if (item.type === 'roadmap-filler') {
+                setTasks(prev => prev.map(task =>
+                    task.id === item.fillerId ? { ...task, target_date: startDateStr } : task
+                ));
+                return;
             }
 
             setInitiatives(prev => prev.map(init => {
@@ -330,6 +340,12 @@ const Dashboard = () => {
             console.error("Failed to update date from timeline:", err);
             loadInitiatives();
         }
+    };
+
+    const handleFillerClick = (fillerId) => {
+        setActiveTab('roadmap');
+        setHighlightedFillerId(fillerId);
+        setTimeout(() => setHighlightedFillerId(null), 2500);
     };
 
     const handleDragEnd = async (event) => {
@@ -397,6 +413,7 @@ const Dashboard = () => {
                     data={initiatives}
                     roadmapFillers={tasks}
                     onUpdateItem={handleTimelineUpdate}
+                    onFillerClick={handleFillerClick}
                     defaultExpanded={true}
                     fullPage={true}
                 />
@@ -471,6 +488,7 @@ const Dashboard = () => {
                     onReorderTasks={handleReorderTasks}
                     isCollapsed={false}
                     onToggleCollapse={() => {}}
+                    highlightedTaskId={highlightedFillerId}
                 />
             )}
 
