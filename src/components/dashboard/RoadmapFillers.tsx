@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
-import { Plus, Trash2, GripVertical, ExternalLink, Calendar, Layers, ChevronDown, ChevronUp, Pencil, Activity } from 'lucide-react';
+import { Plus, Trash2, GripVertical, ExternalLink, Calendar, Layers, ChevronDown, ChevronUp, Pencil, Activity, Archive, ArchiveRestore } from 'lucide-react';
 import TaskLiveStatus from '@/components/TaskLiveStatus';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -24,10 +24,13 @@ import { GROUP_OPTIONS } from './constants';
 
 interface RoadmapFillersProps {
   tasks: Task[];
+  archivedTasks?: Task[];
   onAddTask: () => void;
   onDeleteTask: (id: string, name: string) => void;
   onUpdateTask: (id: string, field: string, value: string | string[]) => void;
   onReorderTasks: (orderedIds: string[]) => void;
+  onArchiveTask?: (id: string) => void;
+  onUnarchiveTask?: (id: string) => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   highlightedTaskId?: string | null;
@@ -35,12 +38,12 @@ interface RoadmapFillersProps {
 
 interface SortableTaskRowProps {
   task: Task;
-  onDelete: (id: string, name: string) => void;
   onUpdate: (id: string, field: string, value: string | string[]) => void;
+  onArchive?: (id: string) => void;
   isHighlighted?: boolean;
 }
 
-function SortableTaskRow({ task, onDelete, onUpdate, isHighlighted = false }: SortableTaskRowProps) {
+function SortableTaskRow({ task, onUpdate, onArchive, isHighlighted = false }: SortableTaskRowProps) {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
@@ -311,14 +314,19 @@ function SortableTaskRow({ task, onDelete, onUpdate, isHighlighted = false }: So
         )}
       </td>
       <td className="px-4 py-3 text-right">
-        <button
-          type="button"
-          onClick={() => onDelete(task.id, task.name)}
-          className="p-1.5 text-slate-300 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
-          title="Delete Task"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+        <div className="relative group/archive inline-block">
+          <button
+            type="button"
+            onClick={() => onArchive?.(task.id)}
+            className="p-1.5 text-slate-300 hover:text-amber-500 transition-colors rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20"
+          >
+            <Archive className="w-4 h-4" />
+          </button>
+          <div className="absolute bottom-full right-0 mb-2 px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover/archive:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none font-medium shadow-xl">
+            Archive task
+            <div className="absolute top-full right-3 border-4 border-transparent border-t-slate-800" />
+          </div>
+        </div>
       </td>
     </tr>
     {isExpanded && (
@@ -338,14 +346,18 @@ function SortableTaskRow({ task, onDelete, onUpdate, isHighlighted = false }: So
 
 export function RoadmapFillers({
   tasks,
+  archivedTasks = [],
   onAddTask,
   onDeleteTask,
   onUpdateTask,
   onReorderTasks,
+  onArchiveTask,
+  onUnarchiveTask,
   isCollapsed = false,
   onToggleCollapse,
   highlightedTaskId,
 }: RoadmapFillersProps) {
+  const [archiveSectionOpen, setArchiveSectionOpen] = useState(false);
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -437,8 +449,8 @@ export function RoadmapFillers({
                         <SortableTaskRow
                           key={task.id}
                           task={task}
-                          onDelete={onDeleteTask}
                           onUpdate={onUpdateTask}
+                          onArchive={onArchiveTask}
                           isHighlighted={highlightedTaskId === task.id}
                         />
                       ))
@@ -458,6 +470,71 @@ export function RoadmapFillers({
             </button>
           </div>
         </>
+      )}
+
+      {/* Archived Tasks Section */}
+      {archivedTasks.length > 0 && (
+        <div className="border-t border-slate-200 dark:border-slate-700">
+          <button
+            onClick={() => setArchiveSectionOpen(!archiveSectionOpen)}
+            className="w-full px-6 py-3 flex items-center justify-between bg-slate-50/70 dark:bg-slate-800/30 hover:bg-slate-100 dark:hover:bg-slate-700/30 transition-colors"
+          >
+            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+              <Archive className="w-4 h-4 text-amber-500" />
+              <span className="text-sm font-medium">Archived</span>
+            </div>
+            {archiveSectionOpen ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+          </button>
+          {archiveSectionOpen && (
+            <div className="divide-y divide-slate-100 dark:divide-slate-700/50">
+              {archivedTasks.map((task) => (
+                <div key={task.id} className="flex items-center gap-3 px-6 py-3 bg-slate-50/40 dark:bg-slate-800/20 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm text-slate-500 dark:text-slate-400 line-through truncate block">{task.name}</span>
+                    {task.target_date && (
+                      <span className="text-xs text-slate-400 dark:text-slate-500">
+                        {format(new Date(task.target_date), 'MMM d, yyyy')}
+                      </span>
+                    )}
+                  </div>
+                  {task.phase && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
+                      {task.phase}
+                    </span>
+                  )}
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <div className="relative group/restore">
+                      <button
+                        type="button"
+                        onClick={() => onUnarchiveTask?.(task.id)}
+                        className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                      >
+                        <ArchiveRestore className="w-4 h-4" />
+                      </button>
+                      <div className="absolute bottom-full right-0 mb-2 px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover/restore:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none font-medium shadow-xl">
+                        Restore to active
+                        <div className="absolute top-full right-3 border-4 border-transparent border-t-slate-800" />
+                      </div>
+                    </div>
+                    <div className="relative group/delete">
+                      <button
+                        type="button"
+                        onClick={() => onDeleteTask(task.id, task.name)}
+                        className="p-1.5 text-slate-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <div className="absolute bottom-full right-0 mb-2 px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover/delete:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none font-medium shadow-xl">
+                        Delete permanently
+                        <div className="absolute top-full right-3 border-4 border-transparent border-t-slate-800" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

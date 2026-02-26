@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Target, Plus, Calendar, Rocket } from 'lucide-react';
+import { Target, Plus, Calendar, Rocket, Archive, ArchiveRestore, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import NewInitiativeModal from '../components/NewInitiativeModal';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
@@ -27,6 +27,69 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 
+function ArchivedInitiativesSection({ archivedInitiatives, onUnarchive, onDelete }) {
+    const [open, setOpen] = React.useState(false);
+    return (
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+            <button
+                onClick={() => setOpen(!open)}
+                className="w-full px-6 py-3 flex items-center justify-between bg-slate-50/70 dark:bg-slate-800/30 hover:bg-slate-100 dark:hover:bg-slate-700/30 transition-colors"
+            >
+                <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                    <Archive className="w-4 h-4 text-amber-500" />
+                    <span className="text-sm font-medium">Archived Initiatives</span>
+                </div>
+                {open ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+            </button>
+            {open && (
+                <div className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                    {archivedInitiatives.map((init) => (
+                        <div key={init.id} className="flex items-center gap-4 px-6 py-3 bg-slate-50/40 dark:bg-slate-800/20 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                            <div className="flex-1 min-w-0">
+                                <span className="text-sm text-slate-500 dark:text-slate-400 line-through truncate block">{init.name}</span>
+                            </div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                                {init.status}
+                            </span>
+                            {init.group && (
+                                <span className="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">{init.group}</span>
+                            )}
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                                <div className="relative group/restore">
+                                    <button
+                                        type="button"
+                                        onClick={() => onUnarchive(init.id)}
+                                        className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                                    >
+                                        <ArchiveRestore className="w-4 h-4" />
+                                    </button>
+                                    <div className="absolute bottom-full right-0 mb-2 px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover/restore:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none font-medium shadow-xl">
+                                        Restore to active
+                                        <div className="absolute top-full right-3 border-4 border-transparent border-t-slate-800" />
+                                    </div>
+                                </div>
+                                <div className="relative group/delete">
+                                    <button
+                                        type="button"
+                                        onClick={() => onDelete(init.id, init.name)}
+                                        className="p-1.5 text-slate-400 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                    <div className="absolute bottom-full right-0 mb-2 px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover/delete:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none font-medium shadow-xl">
+                                        Delete permanently
+                                        <div className="absolute top-full right-3 border-4 border-transparent border-t-slate-800" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
 const Dashboard = () => {
     const [initiatives, setInitiatives] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -40,6 +103,11 @@ const Dashboard = () => {
     const navigate = useNavigate();
     const syncTimeoutRef = useRef({});
 
+    const activeInitiatives = useMemo(() => initiatives.filter(i => !i.isArchived), [initiatives]);
+    const archivedInitiatives = useMemo(() => initiatives.filter(i => i.isArchived), [initiatives]);
+    const activeTasks = useMemo(() => tasks.filter(t => !t.is_archived), [tasks]);
+    const archivedTasks = useMemo(() => tasks.filter(t => t.is_archived), [tasks]);
+
     // Use the filter hook for search and filtering
     const {
         filters,
@@ -48,7 +116,7 @@ const Dashboard = () => {
         updateFilter,
         toggleArrayFilter,
         clearFilters,
-    } = useFilters(initiatives, {
+    } = useFilters(activeInitiatives, {
         searchFields: ['name', 'techLead'],
     });
 
@@ -149,6 +217,79 @@ const Dashboard = () => {
             }
         } else {
             debouncedSync(id, field, value);
+        }
+    };
+
+    const handleReleaseReorder = async (initiativeId, orderedIds) => {
+        setInitiatives(prev => prev.map(init => {
+            if (init.id !== initiativeId) return init;
+            const reordered = orderedIds.map(id => init.releasePlans.find(rp => rp.id === id)).filter(Boolean);
+            return { ...init, releasePlans: reordered };
+        }));
+
+        try {
+            if (dataService.isConfigured()) {
+                await dataService.updateReleasePlanOrder(initiativeId, orderedIds);
+            }
+        } catch (err) {
+            console.error('Failed to update release order:', err);
+            loadInitiatives();
+        }
+    };
+
+    const handleArchiveInitiative = async (id) => {
+        setInitiatives(prev => prev.map(init =>
+            init.id === id ? { ...init, isArchived: true } : init
+        ));
+        try {
+            if (dataService.isConfigured()) {
+                await dataService.archiveInitiative(id, true);
+            }
+        } catch (err) {
+            console.error('Failed to archive initiative:', err);
+            loadInitiatives();
+        }
+    };
+
+    const handleUnarchiveInitiative = async (id) => {
+        setInitiatives(prev => prev.map(init =>
+            init.id === id ? { ...init, isArchived: false } : init
+        ));
+        try {
+            if (dataService.isConfigured()) {
+                await dataService.archiveInitiative(id, false);
+            }
+        } catch (err) {
+            console.error('Failed to unarchive initiative:', err);
+            loadInitiatives();
+        }
+    };
+
+    const handleArchiveTask = async (id) => {
+        setTasks(prev => prev.map(t =>
+            t.id === id ? { ...t, is_archived: true } : t
+        ));
+        try {
+            if (dataService.isConfigured()) {
+                await dataService.archiveTask(id, true);
+            }
+        } catch (err) {
+            console.error('Failed to archive task:', err);
+            loadTasks();
+        }
+    };
+
+    const handleUnarchiveTask = async (id) => {
+        setTasks(prev => prev.map(t =>
+            t.id === id ? { ...t, is_archived: false } : t
+        ));
+        try {
+            if (dataService.isConfigured()) {
+                await dataService.archiveTask(id, false);
+            }
+        } catch (err) {
+            console.error('Failed to unarchive task:', err);
+            loadTasks();
         }
     };
 
@@ -352,17 +493,20 @@ const Dashboard = () => {
         const { active, over } = event;
 
         if (active && over && active.id !== over.id) {
-            setInitiatives((items) => {
-                const oldIndex = items.findIndex((i) => i.id === active.id);
-                const newIndex = items.findIndex((i) => i.id === over.id);
-                const newOrderedItems = arrayMove(items, oldIndex, newIndex);
+            setInitiatives((allItems) => {
+                const activeItems = allItems.filter(i => !i.isArchived);
+                const oldIndex = activeItems.findIndex((i) => i.id === active.id);
+                const newIndex = activeItems.findIndex((i) => i.id === over.id);
+                const reorderedActive = arrayMove(activeItems, oldIndex, newIndex);
+                const archived = allItems.filter(i => i.isArchived);
+                const newItems = [...reorderedActive, ...archived];
 
                 if (dataService.isConfigured()) {
-                    dataService.updateInitiativeOrder(newOrderedItems.map(i => i.id))
+                    dataService.updateInitiativeOrder(reorderedActive.map(i => i.id))
                         .catch(err => console.error("Failed to sync new order:", err));
                 }
 
-                return newOrderedItems;
+                return newItems;
             });
         }
     };
@@ -410,8 +554,8 @@ const Dashboard = () => {
             {/* Timeline Tab */}
             {activeTab === 'timeline' && (
                 <TimelineView
-                    data={initiatives}
-                    roadmapFillers={tasks}
+                    data={activeInitiatives}
+                    roadmapFillers={activeTasks}
                     onUpdateItem={handleTimelineUpdate}
                     onFillerClick={handleFillerClick}
                     defaultExpanded={true}
@@ -421,6 +565,7 @@ const Dashboard = () => {
 
             {/* Initiatives Tab */}
             {activeTab === 'initiatives' && (
+                <>
                 <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
                     <DndContext
                         sensors={sensors}
@@ -439,24 +584,25 @@ const Dashboard = () => {
                                 </tr>
                             </thead>
                             <SortableContext
-                                items={initiatives.map(i => i.id)}
+                                items={activeInitiatives.map(i => i.id)}
                                 strategy={verticalListSortingStrategy}
                             >
                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                                    {initiatives.length === 0 ? (
+                                    {activeInitiatives.length === 0 ? (
                                         <tr>
                                             <td colSpan={6} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
                                                 No initiatives yet. Create your first one!
                                             </td>
                                         </tr>
                                     ) : (
-                                        initiatives.map((init) => (
+                                        activeInitiatives.map((init) => (
                                             <SortableInitiativeRow
                                                 key={init.id}
                                                 init={init}
                                                 handleFieldChange={handleFieldChange}
                                                 handleReleasePhaseChange={handleReleasePhaseChange}
-                                                handleDeleteInitiative={handleDeleteInitiative}
+                                                handleReleaseReorder={handleReleaseReorder}
+                                                onArchive={handleArchiveInitiative}
                                                 STATUS_OPTIONS={STATUS_OPTIONS}
                                                 GROUP_OPTIONS={GROUP_OPTIONS}
                                             />
@@ -476,16 +622,29 @@ const Dashboard = () => {
                         </button>
                     </div>
                 </div>
+
+                {/* Archived Initiatives Section */}
+                {archivedInitiatives.length > 0 && (
+                    <ArchivedInitiativesSection
+                        archivedInitiatives={archivedInitiatives}
+                        onUnarchive={handleUnarchiveInitiative}
+                        onDelete={handleDeleteInitiative}
+                    />
+                )}
+                </>
             )}
 
             {/* Roadmap Fillers Tab */}
             {activeTab === 'roadmap' && (
                 <RoadmapFillers
-                    tasks={tasks}
+                    tasks={activeTasks}
+                    archivedTasks={archivedTasks}
                     onAddTask={() => setIsTaskModalOpen(true)}
                     onDeleteTask={handleDeleteTask}
                     onUpdateTask={handleUpdateTask}
                     onReorderTasks={handleReorderTasks}
+                    onArchiveTask={handleArchiveTask}
+                    onUnarchiveTask={handleUnarchiveTask}
                     isCollapsed={false}
                     onToggleCollapse={() => {}}
                     highlightedTaskId={highlightedFillerId}
