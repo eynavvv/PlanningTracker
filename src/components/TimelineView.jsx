@@ -26,16 +26,23 @@ const TEAM_LOGOS = {
     Zebra: '/zebra-logo.png'
 };
 
-const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
+const TimelineView = ({ data, roadmapFillers, onUpdateItem, defaultExpanded = false, fullPage = false }) => {
     const navigate = useNavigate();
-    const [isExpanded, setIsExpanded] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(defaultExpanded);
     const [draggingItem, setDraggingItem] = useState(null); // { id, deltaDays, originalStartDate, originalEndDate }
     const [showHolidays, setShowHolidays] = useState(false);
     const [filters, setFilters] = useState({ group: [], pm: [], ux: [], techLead: [] });
     const [openFilter, setOpenFilter] = useState(null); // 'group' | 'pm' | 'ux' | 'techLead' | null
     const scrollContainerRef = useRef(null);
     const filterRefs = useRef({});
-    const [shouldFlipTooltip, setShouldFlipTooltip] = useState(false);
+    const [tooltip, setTooltip] = useState(null);
+
+    const showTooltip = (e, content) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const flipUp = rect.top > window.innerHeight * 0.55;
+        setTooltip({ x: rect.left + rect.width / 2, y: flipUp ? rect.top - 12 : rect.bottom + 12, flipUp, content });
+    };
+    const hideTooltip = () => setTooltip(null);
 
     const toggleFilter = (key, value) => {
         setFilters(prev => ({
@@ -45,15 +52,6 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
     };
 
     const totalActiveFilters = filters.group.length + filters.pm.length + filters.ux.length + filters.techLead.length;
-
-    const handleTooltipHover = (e) => {
-        const container = scrollContainerRef.current;
-        if (!container) return;
-        const containerRect = container.getBoundingClientRect();
-        const elemRect = e.currentTarget.getBoundingClientRect();
-        const spaceAbove = elemRect.top - containerRect.top;
-        setShouldFlipTooltip(spaceAbove < 200);
-    };
 
     // Process data into timeline items
     const timelineItems = useMemo(() => {
@@ -432,110 +430,136 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
         }
     }, [isExpanded, todayPos]);
 
-    return (
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm mb-6 transition-all duration-300">
-            <div
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="w-full px-6 py-3 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors cursor-pointer"
+    // Shared toolbar buttons (filters + holidays)
+    const toolbar = (
+        <div className="flex items-center gap-3">
+            <button
+                onClick={(e) => { e.stopPropagation(); setShowHolidays(v => !v); }}
+                className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border transition-colors ${showHolidays ? 'bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 border-violet-200 dark:border-violet-800 hover:bg-violet-100 dark:hover:bg-violet-900/50' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                title={showHolidays ? 'Hide holidays' : 'Show holidays'}
             >
-                <div className="flex items-center gap-3">
-                    <Calendar className="w-5 h-5 text-ss-primary" />
-                    <h2 className="font-bold text-ss-navy dark:text-white">Release Timeline</h2>
+                {showHolidays ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                Holidays
+            </button>
+            {[
+                { key: 'group', label: 'Group' },
+                { key: 'pm', label: 'PM' },
+                { key: 'ux', label: 'UX' },
+                { key: 'techLead', label: 'Tech Lead' },
+            ].map(({ key, label }) => filterOptions[key]?.length > 0 && (
+                <div key={key} className="relative" ref={el => filterRefs.current[key] = el}>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); setOpenFilter(v => v === key ? null : key); }}
+                        className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border transition-colors ${filters[key].length > 0 || openFilter === key ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                    >
+                        {label}
+                        {filters[key].length > 0 && (
+                            <span className="bg-blue-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full leading-none">{filters[key].length}</span>
+                        )}
+                    </button>
+                    {openFilter === key && (
+                        <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="absolute right-0 top-full mt-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl z-50 p-3 min-w-[160px]"
+                        >
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">{label}</div>
+                            <div className="flex flex-col gap-1.5">
+                                {filterOptions[key].map(value => (
+                                    <button
+                                        key={value}
+                                        onClick={() => toggleFilter(key, value)}
+                                        className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-left w-full ${filters[key].includes(value) ? 'bg-blue-500 text-white' : 'bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600'}`}
+                                    >
+                                        {key === 'group' && TEAM_LOGOS[value] && (
+                                            <img src={TEAM_LOGOS[value]} alt="" className="w-4 h-4 rounded-full object-cover flex-none" />
+                                        )}
+                                        {value}
+                                    </button>
+                                ))}
+                            </div>
+                            {filters[key].length > 0 && (
+                                <button
+                                    onClick={() => setFilters(prev => ({ ...prev, [key]: [] }))}
+                                    className="mt-2 w-full text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-center"
+                                >
+                                    Clear
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
+            ))}
+        </div>
+    );
+
+    const holidayLegend = showHolidays && (
+        <div className="flex items-center gap-4 px-4 py-1.5 border-b border-slate-100 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/60 shrink-0">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Holidays</span>
+            {[
+                { label: 'Major', category: 'major' },
+                { label: 'Memorial', category: 'memorial' },
+                { label: 'Minor', category: 'minor' },
+            ].map(({ label, category }) => {
+                const s = getHolidayStyle(category);
+                return (
+                    <div key={category} className="flex items-center gap-1.5">
+                        <div className={`w-2.5 h-2.5 rounded-sm ${s.dot}`} style={{ opacity: 0.7 }} />
+                        <span className={`text-[10px] font-medium ${s.text}`}>{label}</span>
+                    </div>
+                );
+            })}
+        </div>
+    );
+
+    return (
+        <div
+            className={fullPage
+                ? 'flex flex-col bg-white dark:bg-slate-900'
+                : 'bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm mb-6 transition-all duration-300'
+            }
+            style={fullPage ? { height: 'calc(100vh - 180px)' } : {}}
+        >
+            {fullPage ? (
+                /* Full-page: flat toolbar always visible */
+                <>
+                <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 dark:border-slate-700 shrink-0">
                     <span className="text-[10px] bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold px-2 py-0.5 rounded uppercase tracking-wider">
                         {timelineItems.length} PHASES
                     </span>
+                    {toolbar}
                 </div>
-                <div className="flex items-center gap-3 text-slate-400">
-                    {isExpanded && (
-                        <>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); setShowHolidays(v => !v); }}
-                            className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border transition-colors ${showHolidays ? 'bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 border-violet-200 dark:border-violet-800 hover:bg-violet-100 dark:hover:bg-violet-900/50' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
-                            title={showHolidays ? 'Hide holidays' : 'Show holidays'}
-                        >
-                            {showHolidays ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                            Holidays
-                        </button>
-                        {[
-                            { key: 'group', label: 'Group' },
-                            { key: 'pm', label: 'PM' },
-                            { key: 'ux', label: 'UX' },
-                            { key: 'techLead', label: 'Tech Lead' },
-                        ].map(({ key, label }) => filterOptions[key]?.length > 0 && (
-                            <div key={key} className="relative" ref={el => filterRefs.current[key] = el}>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); setOpenFilter(v => v === key ? null : key); }}
-                                    className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border transition-colors ${filters[key].length > 0 || openFilter === key ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
-                                >
-                                    {label}
-                                    {filters[key].length > 0 && (
-                                        <span className="bg-blue-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full leading-none">{filters[key].length}</span>
-                                    )}
-                                </button>
-                                {openFilter === key && (
-                                    <div
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="absolute right-0 top-full mt-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl z-50 p-3 min-w-[160px]"
-                                    >
-                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">{label}</div>
-                                        <div className="flex flex-col gap-1.5">
-                                            {filterOptions[key].map(value => (
-                                                <button
-                                                    key={value}
-                                                    onClick={() => toggleFilter(key, value)}
-                                                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-left w-full ${filters[key].includes(value) ? 'bg-blue-500 text-white' : 'bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600'}`}
-                                                >
-                                                    {key === 'group' && TEAM_LOGOS[value] && (
-                                                        <img src={TEAM_LOGOS[value]} alt="" className="w-4 h-4 rounded-full object-cover flex-none" />
-                                                    )}
-                                                    {value}
-                                                </button>
-                                            ))}
-                                        </div>
-                                        {filters[key].length > 0 && (
-                                            <button
-                                                onClick={() => setFilters(prev => ({ ...prev, [key]: [] }))}
-                                                className="mt-2 w-full text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-center"
-                                            >
-                                                Clear
-                                            </button>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                        </>
-                    )}
-                    <span className="text-xs font-medium">{isExpanded ? 'Collapse' : 'Expand Timeline'}</span>
-                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </div>
-            </div>
-
-            {isExpanded && (
-                <div className="flex flex-col">
-                {/* Holiday Legend */}
-                {showHolidays && (
-                    <div className="flex items-center gap-4 px-6 py-1.5 border-b border-slate-100 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/60">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Holidays</span>
-                        {[
-                            { label: 'Major', category: 'major' },
-                            { label: 'Memorial', category: 'memorial' },
-                            { label: 'Minor', category: 'minor' },
-                        ].map(({ label, category }) => {
-                            const s = getHolidayStyle(category);
-                            return (
-                                <div key={category} className="flex items-center gap-1.5">
-                                    <div className={`w-2.5 h-2.5 rounded-sm ${s.dot}`} style={{ opacity: 0.7 }} />
-                                    <span className={`text-[10px] font-medium ${s.text}`}>{label}</span>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
+                {holidayLegend}
+                </>
+            ) : (
+                /* Card mode: collapsible header */
+                <>
                 <div
-                    ref={scrollContainerRef}
-                    className="overflow-auto max-h-[75vh] custom-scrollbar bg-white dark:bg-slate-900"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="w-full px-6 py-3 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors cursor-pointer"
                 >
+                    <div className="flex items-center gap-3">
+                        <Calendar className="w-5 h-5 text-ss-primary" />
+                        <h2 className="font-bold text-ss-navy dark:text-white">Release Timeline</h2>
+                        <span className="text-[10px] bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold px-2 py-0.5 rounded uppercase tracking-wider">
+                            {timelineItems.length} PHASES
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-slate-400">
+                        {isExpanded && toolbar}
+                        <span className="text-xs font-medium">{isExpanded ? 'Collapse' : 'Expand Timeline'}</span>
+                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </div>
+                </div>
+                {isExpanded && holidayLegend}
+                </>
+            )}
+
+            {/* Timeline content — shown always in fullPage, or when expanded in card mode */}
+            {(fullPage || isExpanded) && (
+            <div
+                ref={scrollContainerRef}
+                className={`custom-scrollbar bg-white dark:bg-slate-900 ${fullPage ? 'overflow-auto flex-1' : 'overflow-auto max-h-[75vh]'}`}
+            >
                     <div
                         className="relative"
                         style={{ width: `${timelineWidth}px`, minWidth: '100%' }}
@@ -622,8 +646,15 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                                 >
                                     {/* Label with tooltip */}
                                     <span
-                                        className={`absolute ${h.style.text} font-bold whitespace-nowrap select-none pointer-events-auto cursor-default group/holiday ${isNarrow ? 'text-[6px] writing-mode-vertical' : 'text-[7px]'}`}
-                                        onMouseEnter={handleTooltipHover}
+                                        className={`absolute ${h.style.text} font-bold whitespace-nowrap select-none pointer-events-auto cursor-default ${isNarrow ? 'text-[6px] writing-mode-vertical' : 'text-[7px]'}`}
+                                        onMouseEnter={(e) => showTooltip(e,
+                                            <div className="px-2.5 py-1.5 bg-ss-navy text-white rounded-md shadow-xl whitespace-nowrap text-[10px] font-medium">
+                                                <span className="font-bold">{h.name}</span>
+                                                <br />
+                                                {dateLabel}
+                                            </div>
+                                        )}
+                                        onMouseLeave={hideTooltip}
                                         style={{
                                             top: isNarrow ? '8px' : '8px',
                                             left: isNarrow ? '50%' : '2px',
@@ -633,11 +664,6 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                                         }}
                                     >
                                         {h.nameHe}
-                                        <span className={`invisible group-hover/holiday:visible absolute ${shouldFlipTooltip ? 'top-full mt-1.5' : 'bottom-full mb-1.5'} left-1/2 -translate-x-1/2 px-2.5 py-1.5 bg-ss-navy text-white rounded-md shadow-xl z-[100] whitespace-nowrap pointer-events-none text-[10px] font-medium before:content-[''] before:absolute ${shouldFlipTooltip ? 'before:bottom-full before:border-b-ss-navy' : 'before:top-full before:border-t-ss-navy'} before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent`} style={{ writingMode: 'horizontal-tb', textOrientation: 'initial' }}>
-                                            <span className="font-bold">{h.name}</span>
-                                            <br />
-                                            {dateLabel}
-                                        </span>
                                     </span>
                                 </div>
                             );
@@ -781,12 +807,34 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                                                         const borderColor = isFiller ? 'border-indigo-300' : 'border-orange-300';
                                                         const anchorColor = isFiller ? 'bg-indigo-500' : 'bg-orange-500';
 
+                                                        const isQaEvent = item.type === 'qa-event';
+
                                                         return (
                                                             <div
                                                                 key={item.id}
-                                                                className="absolute h-8 flex items-center group z-20 hover:z-[9999]"
+                                                                className={`absolute h-8 flex items-center z-20 ${isQaEvent ? 'cursor-grab active:cursor-grabbing' : ''}`}
                                                                 style={{ left: `${left}px` }}
-                                                                onMouseEnter={handleTooltipHover}
+                                                                onMouseDown={isQaEvent ? (e) => { hideTooltip(); handleDragStart(e, item, 'move'); } : undefined}
+                                                                onMouseEnter={(e) => showTooltip(e,
+                                                                    <div className="p-3 bg-ss-navy text-white rounded-lg shadow-xl w-64">
+                                                                        <div className="text-sm font-bold mb-2 border-b border-blue-400/30 pb-1.5 text-center truncate">{item.name}</div>
+                                                                        <div className="flex flex-col gap-2 text-xs">
+                                                                            <div className="text-center">
+                                                                                <div className={`${isFiller ? 'text-indigo-300' : 'text-orange-300'} font-bold uppercase tracking-widest opacity-70 text-[11px]`}>{item.phase}</div>
+                                                                                <div className="font-medium whitespace-nowrap text-xs">{format(currentStartDate, 'MMM d, yyyy')}</div>
+                                                                            </div>
+                                                                            {isFiller && item.detailedStatus && (
+                                                                                <div className="mt-1 text-xs text-blue-100 opacity-80 italic line-clamp-2">"{item.detailedStatus}"</div>
+                                                                            )}
+                                                                        </div>
+                                                                        {isQaEvent && (
+                                                                            <div className="mt-3 pt-2 border-t border-blue-400/20 text-[8px] text-blue-300 uppercase tracking-widest font-black text-center opacity-40">
+                                                                                DRAG TO MOVE
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                                onMouseLeave={hideTooltip}
                                                             >
                                                                 {/* Container for icon above + connector + anchor */}
                                                                 <div className="relative flex flex-col items-center">
@@ -822,19 +870,6 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                                                                     <div className={`w-3 h-3 ${anchorColor} rounded-full border-2 border-white shadow-md`} />
                                                                 </div>
 
-                                                                {/* Tooltip */}
-                                                                <div className={`invisible group-hover:visible absolute ${shouldFlipTooltip ? 'top-full mt-4' : 'bottom-full mb-12'} left-1/2 -translate-x-1/2 p-3 bg-ss-navy text-white rounded-lg shadow-xl z-[100] w-64 pointer-events-none before:content-[''] before:absolute ${shouldFlipTooltip ? 'before:bottom-full before:border-b-ss-navy' : 'before:top-full before:border-t-ss-navy'} before:left-1/2 before:-translate-x-1/2 before:border-8 before:border-transparent`}>
-                                                                    <div className="text-sm font-bold mb-2 border-b border-blue-400/30 pb-1.5 text-center truncate">{item.name}</div>
-                                                                    <div className="flex flex-col gap-2 text-xs">
-                                                                        <div className="text-center">
-                                                                            <div className={`${isFiller ? 'text-indigo-300' : 'text-orange-300'} font-bold uppercase tracking-widest opacity-70 text-[11px]`}>{item.phase}</div>
-                                                                            <div className="font-medium whitespace-nowrap text-xs">{format(currentStartDate, 'MMM d, yyyy')}</div>
-                                                                        </div>
-                                                                        {isFiller && item.detailedStatus && (
-                                                                            <div className="mt-1 text-xs text-blue-100 opacity-80 italic line-clamp-2">"{item.detailedStatus}"</div>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
                                                             </div>
                                                         );
                                                     }
@@ -842,9 +877,60 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                                                     return (
                                                         <div
                                                             key={item.id}
-                                                            onMouseDown={(e) => handleDragStart(e, item, 'move')}
-                                                            onMouseEnter={handleTooltipHover}
-                                                            className={`absolute h-8 rounded-lg border flex items-center px-3 text-[10px] font-bold transition-all cursor-grab active:cursor-grabbing group shadow-sm hover:z-[9999] ${colorClass} ${isDragging ? 'z-50 ring-2 ring-ss-primary shadow-lg scale-[1.02] opacity-90' : 'z-10'}`}
+                                                            onMouseDown={(e) => { hideTooltip(); handleDragStart(e, item, 'move'); }}
+                                                            onMouseEnter={(e) => showTooltip(e,
+                                                                <div className="p-3 bg-ss-navy text-white rounded-lg shadow-2xl w-80">
+                                                                    <div className="text-sm font-bold mb-2 border-b border-blue-400/30 pb-1.5 text-center truncate">{item.name}</div>
+                                                                    <div className="flex flex-col gap-2.5 text-xs">
+                                                                        <div className="flex items-center justify-between bg-blue-900/40 px-2.5 py-1.5 rounded border border-blue-400/10 text-[10px]">
+                                                                            <div className="flex gap-1 items-center">
+                                                                                <span className="text-blue-300 opacity-50 uppercase font-bold tracking-tight text-[10px]">Start</span>
+                                                                                <span className="font-bold text-[11px]">{format(currentStartDate, 'MMM d, yyyy')}</span>
+                                                                            </div>
+                                                                            <div className="flex gap-1 items-center ml-auto">
+                                                                                <span className="text-blue-300 opacity-50 uppercase font-bold tracking-tight text-[10px]">End</span>
+                                                                                <span className="font-bold text-[11px]">{format(currentEndDate, 'MMM d, yyyy')}</span>
+                                                                            </div>
+                                                                        </div>
+                                                                        {item.detailedStatus && (
+                                                                            <div className="space-y-1">
+                                                                                <div className="text-blue-300 text-[10px] uppercase tracking-widest font-black opacity-80 text-center">Current Focus</div>
+                                                                                <div className="text-xs italic text-blue-50 leading-relaxed bg-blue-900/40 p-2.5 rounded-lg border border-blue-400/10 text-left">
+                                                                                    "{item.detailedStatus}"
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                        {item.deliverables && item.deliverables.filter(d => d.status !== 'done').length > 0 && (
+                                                                            <div className="space-y-1">
+                                                                                <div className="flex justify-between items-center relative">
+                                                                                    <div className="text-emerald-400 text-[10px] uppercase tracking-widest font-black opacity-80 w-full text-center">Next Deliverables</div>
+                                                                                    <div className="text-[10px] text-emerald-400/60 font-bold uppercase absolute right-0">[{item.deliverables.filter(d => d.status !== 'done').length}]</div>
+                                                                                </div>
+                                                                                <div className="space-y-1">
+                                                                                    {item.deliverables
+                                                                                        .filter(d => d.status !== 'done')
+                                                                                        .slice(0, 5)
+                                                                                        .map((d, i) => (
+                                                                                            <div key={i} className="text-xs bg-white/5 p-2 rounded border border-white/10 flex justify-between items-center gap-2">
+                                                                                                <span className="truncate flex-1 font-medium text-left">{d.name}</span>
+                                                                                                {d.date && (
+                                                                                                    <span className="text-[10px] text-blue-300 font-bold whitespace-nowrap bg-blue-900/40 px-1.5 py-0.5 rounded border border-blue-400/20">
+                                                                                                        {format(new Date(d.date), 'MMM d')}
+                                                                                                    </span>
+                                                                                                )}
+                                                                                            </div>
+                                                                                        ))}
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="mt-3 pt-2 border-t border-blue-400/20 text-[8px] text-blue-300 uppercase tracking-widest font-black text-center opacity-40">
+                                                                        DRAG TO MOVE • EDGES TO RESIZE
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            onMouseLeave={hideTooltip}
+                                                            className={`absolute h-8 rounded-lg border flex items-center px-3 text-[10px] font-bold transition-all cursor-grab active:cursor-grabbing shadow-sm ${colorClass} ${isDragging ? 'z-50 ring-2 ring-ss-primary shadow-lg scale-[1.02] opacity-90' : 'z-10'}`}
                                                             style={{ left: `${left}px`, width: `${width}px` }}
                                                         >
                                                             {/* Left Resize Handle */}
@@ -879,59 +965,6 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                                                                 className="absolute right-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-black/10 rounded-r-lg transition-colors z-20"
                                                             />
 
-                                                            {/* Tooltip */}
-                                                            <div className={`invisible group-hover:visible absolute ${shouldFlipTooltip ? 'top-full mt-4' : 'bottom-full mb-4'} left-1/2 -translate-x-1/2 p-3 bg-ss-navy text-white rounded-lg shadow-2xl z-[500] w-80 pointer-events-none before:content-[''] before:absolute ${shouldFlipTooltip ? 'before:bottom-full before:border-b-ss-navy' : 'before:top-full before:border-t-ss-navy'} before:left-1/2 before:-translate-x-1/2 before:border-8 before:border-transparent`}>
-                                                                <div className="text-sm font-bold mb-2 border-b border-blue-400/30 pb-1.5 text-center truncate">{item.name}</div>
-                                                                <div className="flex flex-col gap-2.5 text-xs">
-                                                                    <div className="flex items-center justify-between bg-blue-900/40 px-2.5 py-1.5 rounded border border-blue-400/10 text-[10px]">
-                                                                        <div className="flex gap-1 items-center">
-                                                                            <span className="text-blue-300 opacity-50 uppercase font-bold tracking-tight text-[10px]">Start</span>
-                                                                            <span className="font-bold text-[11px]">{format(currentStartDate, 'MMM d, yyyy')}</span>
-                                                                        </div>
-                                                                        <div className="flex gap-1 items-center ml-auto">
-                                                                            <span className="text-blue-300 opacity-50 uppercase font-bold tracking-tight text-[10px]">End</span>
-                                                                            <span className="font-bold text-[11px]">{format(currentEndDate, 'MMM d, yyyy')}</span>
-                                                                        </div>
-                                                                    </div>
-
-                                                                    {item.detailedStatus && (
-                                                                        <div className="space-y-1">
-                                                                            <div className="text-blue-300 text-[10px] uppercase tracking-widest font-black opacity-80 text-center">Current Focus</div>
-                                                                            <div className="text-xs italic text-blue-50 leading-relaxed bg-blue-900/40 p-2.5 rounded-lg border border-blue-400/10 text-left">
-                                                                                "{item.detailedStatus}"
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-
-                                                                    {item.deliverables && item.deliverables.filter(d => d.status !== 'done').length > 0 && (
-                                                                        <div className="space-y-1">
-                                                                            <div className="flex justify-between items-center relative">
-                                                                                <div className="text-emerald-400 text-[10px] uppercase tracking-widest font-black opacity-80 w-full text-center">Next Deliverables</div>
-                                                                                <div className="text-[10px] text-emerald-400/60 font-bold uppercase absolute right-0">[{item.deliverables.filter(d => d.status !== 'done').length}]</div>
-                                                                            </div>
-                                                                            <div className="space-y-1">
-                                                                                {item.deliverables
-                                                                                    .filter(d => d.status !== 'done')
-                                                                                    .slice(0, 5)
-                                                                                    .map((d, i) => (
-                                                                                        <div key={i} className="text-xs bg-white/5 p-2 rounded border border-white/10 flex justify-between items-center gap-2">
-                                                                                            <span className="truncate flex-1 font-medium text-left">{d.name}</span>
-                                                                                            {d.date && (
-                                                                                                <span className="text-[10px] text-blue-300 font-bold whitespace-nowrap bg-blue-900/40 px-1.5 py-0.5 rounded border border-blue-400/20">
-                                                                                                    {format(new Date(d.date), 'MMM d')}
-                                                                                                </span>
-                                                                                            )}
-                                                                                        </div>
-                                                                                    ))}
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-
-                                                                <div className="mt-3 pt-2 border-t border-blue-400/20 text-[8px] text-blue-300 uppercase tracking-widest font-black text-center opacity-40">
-                                                                    DRAG TO MOVE • EDGES TO RESIZE
-                                                                </div>
-                                                            </div>
                                                         </div>
                                                     );
                                                 })}
@@ -944,6 +977,19 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                         </div>{/* end Timeline Content */}
                     </div>
                 </div>
+            )}
+
+            {/* Fixed tooltip — renders above all other elements */}
+            {tooltip && (
+                <div
+                    className="fixed z-[9999] pointer-events-none"
+                    style={{
+                        left: `${tooltip.x}px`,
+                        top: `${tooltip.y}px`,
+                        transform: tooltip.flipUp ? 'translateX(-50%) translateY(-100%)' : 'translateX(-50%)',
+                    }}
+                >
+                    {tooltip.content}
                 </div>
             )}
         </div>

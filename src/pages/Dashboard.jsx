@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { ChevronDown, ChevronUp, Target, Plus } from 'lucide-react';
+import { Target, Plus, Calendar, Rocket } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import NewInitiativeModal from '../components/NewInitiativeModal';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
@@ -35,8 +35,7 @@ const Dashboard = () => {
     const [deleteModal, setDeleteModal] = useState({ isOpen: false, item: null, type: 'initiative' });
     const [tasks, setTasks] = useState([]);
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
-    const [isInitiativesCollapsed, setIsInitiativesCollapsed] = useState(false);
-    const [isRoadmapFillersCollapsed, setIsRoadmapFillersCollapsed] = useState(false);
+    const [activeTab, setActiveTab] = useState('timeline');
     const navigate = useNavigate();
     const syncTimeoutRef = useRef({});
 
@@ -288,6 +287,10 @@ const Dashboard = () => {
                     devStartDate: startDateStr,
                     devEndDate: endDateStr
                 });
+            } else if (item.type === 'qa-event') {
+                await dataService.updateReleasePlan(item.initiativeId, item.releaseId, {
+                    qaEventDate: startDateStr
+                });
             }
 
             setInitiatives(prev => prev.map(init => {
@@ -310,6 +313,8 @@ const Dashboard = () => {
                                         return { ...rp, pre_planning_start_date: startDateStr, pre_planning_end_date: endDateStr };
                                     } else if (item.type === 'release-planning') {
                                         return { ...rp, planning_start_date: startDateStr, planning_end_date: endDateStr };
+                                    } else if (item.type === 'qa-event') {
+                                        return { ...rp, qa_event_date: startDateStr };
                                     } else {
                                         return { ...rp, dev_start_date: startDateStr, dev_end_date: endDateStr };
                                     }
@@ -350,27 +355,35 @@ const Dashboard = () => {
         return <DashboardSkeleton />;
     }
 
+    const TABS = [
+        { key: 'timeline', label: 'Timeline', icon: Calendar },
+        { key: 'initiatives', label: 'Initiatives', icon: Target },
+        { key: 'roadmap', label: 'Roadmap Fillers', icon: Rocket },
+    ];
+
     return (
-        <div className="space-y-8">
+        <div className="flex flex-col gap-0">
             <DashboardHeader />
 
-            <TimelineView data={initiatives} roadmapFillers={tasks} onUpdateItem={handleTimelineUpdate} />
+            {/* Tab Bar */}
+            <div className="flex gap-1 border-b border-slate-200 dark:border-slate-700">
+                {TABS.map(({ key, label, icon: Icon }) => (
+                    <button
+                        key={key}
+                        onClick={() => setActiveTab(key)}
+                        className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors ${
+                            activeTab === key
+                                ? 'text-ss-primary dark:text-blue-400'
+                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                        }`}
+                    >
+                        <Icon className="w-4 h-4" />
+                        {label}
+                    </button>
+                ))}
+            </div>
 
-            {/* Filter and search hidden for now
-            <InitiativeFilters
-                filters={filters}
-                onUpdateFilter={updateFilter}
-                onToggleArrayFilter={toggleArrayFilter}
-                onClearFilters={clearFilters}
-                hasActiveFilters={hasActiveFilters}
-                options={{
-                    status: STATUS_OPTIONS,
-                    pm: PM_OPTIONS,
-                    ux: UX_OPTIONS,
-                    group: GROUP_OPTIONS,
-                }}
-            />
-            */}
+            <div className="mt-6 flex flex-col gap-6">
 
             {error && (
                 <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 p-4 rounded-lg border border-red-200 dark:border-red-800">
@@ -378,98 +391,90 @@ const Dashboard = () => {
                 </div>
             )}
 
-            {/* Initiatives Section */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm relative z-10">
-                {/* Collapsible Header */}
-                <button
-                    onClick={() => setIsInitiativesCollapsed(!isInitiativesCollapsed)}
-                    className="w-full px-6 py-3 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
-                >
-                    <div className="flex items-center gap-3">
-                        <Target className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                        <h2 className="font-bold text-slate-800 dark:text-slate-100">Initiatives</h2>
-                        <span className="text-[10px] bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-bold px-2 py-0.5 rounded uppercase tracking-wider">
-                            {initiatives.length} ITEMS
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-400">
-                        <span className="text-xs font-medium">{isInitiativesCollapsed ? 'Expand' : 'Collapse'}</span>
-                        {isInitiativesCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-                    </div>
-                </button>
+            {/* Timeline Tab */}
+            {activeTab === 'timeline' && (
+                <TimelineView
+                    data={initiatives}
+                    roadmapFillers={tasks}
+                    onUpdateItem={handleTimelineUpdate}
+                    defaultExpanded={true}
+                    fullPage={true}
+                />
+            )}
 
-                {/* Collapsible Content */}
-                {!isInitiativesCollapsed && (
-                    <>
-                        <DndContext
-                            sensors={sensors}
-                            collisionDetection={closestCenter}
-                            onDragEnd={handleDragEnd}
-                        >
-                            <div>
-                                <table className="w-full text-left text-sm">
-                                    <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
-                                        <tr>
-                                            <th className="w-10"></th>
-                                            <th className="px-6 py-4 font-semibold text-slate-900 dark:text-slate-100 w-[30%]">Initiative Name</th>
-                                            <th className="px-6 py-4 font-semibold text-slate-900 dark:text-slate-100 w-[200px]">Phase</th>
-                                            <th className="px-6 py-4 font-semibold text-slate-900 dark:text-slate-100 w-[150px]">Target Date</th>
-                                            <th className="px-6 py-4 font-semibold text-slate-900 dark:text-slate-100 w-[100px]">Group</th>
-                                            <th className="px-6 py-4 font-semibold text-slate-900 dark:text-slate-100 w-10"></th>
-                                        </tr>
-                                    </thead>
-                                    <SortableContext
-                                        items={initiatives.map(i => i.id)}
-                                        strategy={verticalListSortingStrategy}
-                                    >
-                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                                            {initiatives.length === 0 ? (
-                                                <tr>
-                                                    <td colSpan={6} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
-                                                        <p>No initiatives yet. Create your first one!</p>
-                                                    </td>
-                                                </tr>
-                                            ) : (
-                                                initiatives.map((init) => (
-                                                    <SortableInitiativeRow
-                                                        key={init.id}
-                                                        init={init}
-                                                        handleFieldChange={handleFieldChange}
-                                                        handleReleasePhaseChange={handleReleasePhaseChange}
-                                                        handleDeleteInitiative={handleDeleteInitiative}
-                                                        STATUS_OPTIONS={STATUS_OPTIONS}
-                                                        GROUP_OPTIONS={GROUP_OPTIONS}
-                                                    />
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </SortableContext>
-                                </table>
-                            </div>
-                        </DndContext>
-                        <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex justify-end">
-                            <button
-                                onClick={() => setIsModalOpen(true)}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-sm font-medium transition-all inline-flex items-center gap-2 text-sm"
+            {/* Initiatives Tab */}
+            {activeTab === 'initiatives' && (
+                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                    >
+                        <table className="w-full text-left text-sm">
+                            <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+                                <tr>
+                                    <th className="w-10"></th>
+                                    <th className="px-6 py-4 font-semibold text-slate-900 dark:text-slate-100 w-[30%]">Initiative Name</th>
+                                    <th className="px-6 py-4 font-semibold text-slate-900 dark:text-slate-100 w-[200px]">Phase</th>
+                                    <th className="px-6 py-4 font-semibold text-slate-900 dark:text-slate-100 w-[150px]">Target Date</th>
+                                    <th className="px-6 py-4 font-semibold text-slate-900 dark:text-slate-100 w-[100px]">Group</th>
+                                    <th className="px-6 py-4 font-semibold text-slate-900 dark:text-slate-100 w-10"></th>
+                                </tr>
+                            </thead>
+                            <SortableContext
+                                items={initiatives.map(i => i.id)}
+                                strategy={verticalListSortingStrategy}
                             >
-                                <Plus className="w-4 h-4" />
-                                Add Initiative
-                            </button>
-                        </div>
-                    </>
-                )}
-            </div>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                                    {initiatives.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={6} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                                                No initiatives yet. Create your first one!
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        initiatives.map((init) => (
+                                            <SortableInitiativeRow
+                                                key={init.id}
+                                                init={init}
+                                                handleFieldChange={handleFieldChange}
+                                                handleReleasePhaseChange={handleReleasePhaseChange}
+                                                handleDeleteInitiative={handleDeleteInitiative}
+                                                STATUS_OPTIONS={STATUS_OPTIONS}
+                                                GROUP_OPTIONS={GROUP_OPTIONS}
+                                            />
+                                        ))
+                                    )}
+                                </tbody>
+                            </SortableContext>
+                        </table>
+                    </DndContext>
+                    <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex justify-end">
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-sm font-medium transition-all inline-flex items-center gap-2 text-sm"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Add Initiative
+                        </button>
+                    </div>
+                </div>
+            )}
 
-            {/* Roadmap Fillers Section */}
-            <RoadmapFillers
-                tasks={tasks}
-                onAddTask={() => setIsTaskModalOpen(true)}
-                onDeleteTask={handleDeleteTask}
-                onUpdateTask={handleUpdateTask}
-                onReorderTasks={handleReorderTasks}
-                isCollapsed={isRoadmapFillersCollapsed}
-                onToggleCollapse={() => setIsRoadmapFillersCollapsed(!isRoadmapFillersCollapsed)}
-            />
+            {/* Roadmap Fillers Tab */}
+            {activeTab === 'roadmap' && (
+                <RoadmapFillers
+                    tasks={tasks}
+                    onAddTask={() => setIsTaskModalOpen(true)}
+                    onDeleteTask={handleDeleteTask}
+                    onUpdateTask={handleUpdateTask}
+                    onReorderTasks={handleReorderTasks}
+                    isCollapsed={false}
+                    onToggleCollapse={() => {}}
+                />
+            )}
+
+            </div>{/* end tab content */}
 
             <NewInitiativeModal
                 isOpen={isModalOpen}
