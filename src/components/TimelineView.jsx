@@ -31,8 +31,20 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [draggingItem, setDraggingItem] = useState(null); // { id, deltaDays, originalStartDate, originalEndDate }
     const [showHolidays, setShowHolidays] = useState(false);
+    const [filters, setFilters] = useState({ group: [], pm: [], ux: [], techLead: [] });
+    const [openFilter, setOpenFilter] = useState(null); // 'group' | 'pm' | 'ux' | 'techLead' | null
     const scrollContainerRef = useRef(null);
+    const filterRefs = useRef({});
     const [shouldFlipTooltip, setShouldFlipTooltip] = useState(false);
+
+    const toggleFilter = (key, value) => {
+        setFilters(prev => ({
+            ...prev,
+            [key]: prev[key].includes(value) ? prev[key].filter(v => v !== value) : [...prev[key], value]
+        }));
+    };
+
+    const totalActiveFilters = filters.group.length + filters.pm.length + filters.ux.length + filters.techLead.length;
 
     const handleTooltipHover = (e) => {
         const container = scrollContainerRef.current;
@@ -60,6 +72,9 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                         initiativeName: initiative.name,
                         initiativeId: initiative.id,
                         group: initiative.group,
+                        pm: initiative.pm,
+                        ux: initiative.ux,
+                        techLead: initiative.techLead,
                         detailedStatus: initiative.detailedStatus,
                         overallStatus: initiative.status,
                         deliverables: initiative.deliverables
@@ -80,6 +95,9 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                             initiativeName: initiative.name,
                             initiativeId: initiative.id,
                             group: initiative.group,
+                            pm: initiative.pm,
+                            ux: initiative.ux,
+                            techLead: initiative.techLead,
                             releaseId: rp.id,
                             detailedStatus: initiative.detailedStatus,
                             overallStatus: initiative.status,
@@ -99,6 +117,9 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                             initiativeName: initiative.name,
                             initiativeId: initiative.id,
                             group: initiative.group,
+                            pm: initiative.pm,
+                            ux: initiative.ux,
+                            techLead: initiative.techLead,
                             releaseId: rp.id,
                             detailedStatus: initiative.detailedStatus,
                             overallStatus: initiative.status,
@@ -118,6 +139,9 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                             initiativeName: initiative.name,
                             initiativeId: initiative.id,
                             group: initiative.group,
+                            pm: initiative.pm,
+                            ux: initiative.ux,
+                            techLead: initiative.techLead,
                             releaseId: rp.id,
                             detailedStatus: initiative.detailedStatus,
                             overallStatus: initiative.status,
@@ -138,6 +162,9 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                             initiativeName: initiative.name,
                             initiativeId: initiative.id,
                             group: initiative.group,
+                            pm: initiative.pm,
+                            ux: initiative.ux,
+                            techLead: initiative.techLead,
                             releaseId: rp.id,
                             detailedStatus: initiative.detailedStatus,
                             overallStatus: initiative.status,
@@ -173,6 +200,28 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
 
         return items.sort((a, b) => a.startDate - b.startDate);
     }, [data, roadmapFillers]);
+
+    const filterOptions = useMemo(() => {
+        const groups = new Set(), pms = new Set(), uxs = new Set(), techLeads = new Set();
+        timelineItems.forEach(item => {
+            if (item.initiativeName === 'Roadmap Fillers') return;
+            if (item.group) groups.add(item.group);
+            if (item.pm) pms.add(item.pm);
+            if (item.ux) uxs.add(item.ux);
+            if (item.techLead) {
+                item.techLead.split(',').forEach(tl => {
+                    const trimmed = tl.trim();
+                    if (trimmed) techLeads.add(trimmed);
+                });
+            }
+        });
+        return {
+            group: Array.from(groups).sort(),
+            pm: Array.from(pms).sort(),
+            ux: Array.from(uxs).sort(),
+            techLead: Array.from(techLeads).sort(),
+        };
+    }, [timelineItems]);
 
     // Calculate timeline range
     const range = useMemo(() => {
@@ -214,6 +263,23 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
         }
         initiativeRows[item.initiativeName].push(item);
     });
+
+    const displayedInitiativeRows = totalActiveFilters === 0
+        ? initiativeRows
+        : Object.fromEntries(
+            Object.entries(initiativeRows).filter(([name, items]) => {
+                if (name === 'Roadmap Fillers') return true;
+                const item = items[0];
+                if (filters.group.length > 0 && !filters.group.includes(item?.group)) return false;
+                if (filters.pm.length > 0 && !filters.pm.includes(item?.pm)) return false;
+                if (filters.ux.length > 0 && !filters.ux.includes(item?.ux)) return false;
+                if (filters.techLead.length > 0) {
+                    const itemTechLeads = (item?.techLead || '').split(',').map(tl => tl.trim()).filter(Boolean);
+                    if (!filters.techLead.some(tl => itemTechLeads.includes(tl))) return false;
+                }
+                return true;
+            })
+        );
 
     const monthMarkers = [];
     let currentMonth = startOfMonth(range.min);
@@ -340,6 +406,17 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
     };
 
     useEffect(() => {
+        if (!openFilter) return;
+        const handleClickOutside = (e) => {
+            if (filterRefs.current[openFilter] && !filterRefs.current[openFilter].contains(e.target)) {
+                setOpenFilter(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [openFilter]);
+
+    useEffect(() => {
         if (isExpanded && scrollContainerRef.current && todayPos !== null) {
             // Small delay to ensure the DOM has updated and is ready to scroll
             const timer = setTimeout(() => {
@@ -356,10 +433,10 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
     }, [isExpanded, todayPos]);
 
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden mb-6 transition-all duration-300">
-            <button
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm mb-6 transition-all duration-300">
+            <div
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="w-full px-6 py-3 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+                className="w-full px-6 py-3 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors cursor-pointer"
             >
                 <div className="flex items-center gap-3">
                     <Calendar className="w-5 h-5 text-ss-primary" />
@@ -370,6 +447,7 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                 </div>
                 <div className="flex items-center gap-3 text-slate-400">
                     {isExpanded && (
+                        <>
                         <button
                             onClick={(e) => { e.stopPropagation(); setShowHolidays(v => !v); }}
                             className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border transition-colors ${showHolidays ? 'bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 border-violet-200 dark:border-violet-800 hover:bg-violet-100 dark:hover:bg-violet-900/50' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
@@ -378,11 +456,60 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
                             {showHolidays ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
                             Holidays
                         </button>
+                        {[
+                            { key: 'group', label: 'Group' },
+                            { key: 'pm', label: 'PM' },
+                            { key: 'ux', label: 'UX' },
+                            { key: 'techLead', label: 'Tech Lead' },
+                        ].map(({ key, label }) => filterOptions[key]?.length > 0 && (
+                            <div key={key} className="relative" ref={el => filterRefs.current[key] = el}>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setOpenFilter(v => v === key ? null : key); }}
+                                    className={`flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border transition-colors ${filters[key].length > 0 || openFilter === key ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                                >
+                                    {label}
+                                    {filters[key].length > 0 && (
+                                        <span className="bg-blue-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full leading-none">{filters[key].length}</span>
+                                    )}
+                                </button>
+                                {openFilter === key && (
+                                    <div
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="absolute right-0 top-full mt-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl z-50 p-3 min-w-[160px]"
+                                    >
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">{label}</div>
+                                        <div className="flex flex-col gap-1.5">
+                                            {filterOptions[key].map(value => (
+                                                <button
+                                                    key={value}
+                                                    onClick={() => toggleFilter(key, value)}
+                                                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-left w-full ${filters[key].includes(value) ? 'bg-blue-500 text-white' : 'bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600'}`}
+                                                >
+                                                    {key === 'group' && TEAM_LOGOS[value] && (
+                                                        <img src={TEAM_LOGOS[value]} alt="" className="w-4 h-4 rounded-full object-cover flex-none" />
+                                                    )}
+                                                    {value}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        {filters[key].length > 0 && (
+                                            <button
+                                                onClick={() => setFilters(prev => ({ ...prev, [key]: [] }))}
+                                                className="mt-2 w-full text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-center"
+                                            >
+                                                Clear
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                        </>
                     )}
                     <span className="text-xs font-medium">{isExpanded ? 'Collapse' : 'Expand Timeline'}</span>
                     {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </div>
-            </button>
+            </div>
 
             {isExpanded && (
                 <div className="flex flex-col">
@@ -529,7 +656,7 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem }) => {
 
                         {/* Bars */}
                         <div className="flex flex-col gap-6 relative z-0">
-                            {Object.entries(initiativeRows).map(([name, items], rowIdx) => {
+                            {Object.entries(displayedInitiativeRows).map(([name, items], rowIdx) => {
                                 // Strict grouping: Initial Plan on row 0, then one row per Release
                                 const subRows = [];
                                 const isFillerRow = name === 'Roadmap Fillers';
