@@ -66,7 +66,8 @@ class DataService {
             // Fetch all release plans
             const { data: releasePlans, error: rpError } = await supabase
                 .from('release_plans')
-                .select('id, initiative_id, goal, pre_planning_start_date, pre_planning_end_date, planning_start_date, planning_end_date, dev_start_date, dev_end_date, qa_event_date, status');
+                .select('id, initiative_id, goal, pre_planning_start_date, pre_planning_end_date, planning_start_date, planning_end_date, dev_start_date, dev_end_date, qa_event_date, status, order_index')
+                .order('order_index', { ascending: true });
 
             if (rpError) throw rpError;
 
@@ -90,6 +91,7 @@ class DataService {
                 developers: init.developers || [],
                 detailedStatus: init.detailed_status || '',
                 initialPlanning: initialPlanning.find(ip => ip.initiative_id === init.id),
+                isArchived: init.is_archived || false,
                 releasePlans: releasePlans.filter(rp => rp.initiative_id === init.id),
                 deliverables: deliverables?.filter(d => d.initiative_id === init.id).map(d => ({
                     id: d.id,
@@ -355,6 +357,7 @@ class DataService {
             if ('detailedStatus' in updates) dbUpdates.detailed_status = updates.detailedStatus;
             if ('name' in updates) dbUpdates.name = updates.name;
             if ('Name' in updates) dbUpdates.name = updates.Name;
+            if ('isArchived' in updates) dbUpdates.is_archived = updates.isArchived;
 
             const { error } = await supabase
                 .from('initiatives')
@@ -569,6 +572,57 @@ class DataService {
             return { success: true };
         } catch (error) {
             console.error('Error updating initiative order:', error);
+            throw error;
+        }
+    }
+
+    async archiveInitiative(id, isArchived = true) {
+        try {
+            const { error } = await supabase
+                .from('initiatives')
+                .update({ is_archived: isArchived })
+                .eq('id', id);
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error('Error archiving initiative:', error);
+            throw error;
+        }
+    }
+
+    async archiveTask(id, isArchived = true) {
+        try {
+            const { error } = await supabase
+                .from('tasks')
+                .update({ is_archived: isArchived })
+                .eq('id', id);
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error('Error archiving task:', error);
+            throw error;
+        }
+    }
+
+    async updateReleasePlanOrder(initiativeId, orderedIds) {
+        try {
+            const updates = orderedIds.map((id, index) => ({
+                id,
+                order_index: index
+            }));
+
+            await Promise.all(
+                updates.map(update =>
+                    supabase
+                        .from('release_plans')
+                        .update({ order_index: update.order_index })
+                        .eq('id', update.id)
+                        .eq('initiative_id', initiativeId)
+                )
+            );
+            return { success: true };
+        } catch (error) {
+            console.error('Error updating release plan order:', error);
             throw error;
         }
     }

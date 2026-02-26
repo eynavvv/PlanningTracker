@@ -1,8 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Trash2, GripVertical, ChevronRight, ChevronDown, Rocket, PartyPopper, Calendar } from 'lucide-react';
-import { useSortable } from '@dnd-kit/sortable';
+import { GripVertical, ChevronRight, ChevronDown, Rocket, PartyPopper, Calendar, Archive } from 'lucide-react';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { RELEASE_STATUS_OPTIONS } from './constants';
 
@@ -69,11 +71,112 @@ function getTargetDate(init: Initiative): string | null {
   }
 }
 
+interface SortableReleaseRowProps {
+  rp: ReleasePlan;
+  initiativeId: string;
+  handleReleasePhaseChange: (initiativeId: string, releaseId: string, newStatus: string) => void;
+}
+
+function SortableReleaseRow({ rp, initiativeId, handleReleasePhaseChange }: SortableReleaseRowProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: rp.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={style}
+      className="bg-blue-50/30 dark:bg-blue-900/20 border-l-4 border-l-blue-400 transition-colors border-b border-slate-100/50 dark:border-slate-700/50"
+    >
+      <td className="px-4">
+        <button
+          {...attributes}
+          {...listeners}
+          className="p-1.5 rounded text-slate-300 hover:text-slate-500 dark:hover:text-slate-300 cursor-grab active:cursor-grabbing transition-colors"
+          title="Drag to reorder"
+        >
+          <GripVertical className="w-3.5 h-3.5" />
+        </button>
+      </td>
+      <td className="px-6 py-3">
+        <div className="flex items-center gap-2 pl-6">
+          <Rocket className="w-3.5 h-3.5 text-blue-400" />
+          <Link
+            to={`/plan/${encodeURIComponent(initiativeId)}?view=release_plans#release-${rp.id}`}
+            className="text-slate-600 dark:text-slate-300 font-medium text-xs hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors truncate"
+            title={rp.goal}
+          >
+            {rp.goal}
+          </Link>
+        </div>
+      </td>
+      <td className="px-6 py-3">
+        <select
+          value={rp.status}
+          onChange={(e) => handleReleasePhaseChange(initiativeId, rp.id, e.target.value)}
+          className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider w-full text-center border focus:ring-2 focus:ring-blue-400 outline-none transition-all ${rp.status === 'Pending'
+            ? 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-700 dark:text-slate-300'
+            : rp.status === 'Pre-Planning'
+              ? 'bg-cyan-50 text-cyan-600 border-cyan-100 dark:bg-cyan-900/30 dark:text-cyan-400'
+              : rp.status === 'Planning'
+                ? 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/30 dark:text-blue-400'
+                : rp.status === 'Development'
+                  ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/30 dark:text-amber-400'
+                  : rp.status === 'Released'
+                    ? 'bg-green-50 text-green-600 border-green-100 dark:bg-green-900/30 dark:text-green-400'
+                    : 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-700 dark:text-slate-300'
+            }`}
+        >
+          {RELEASE_STATUS_OPTIONS.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
+      </td>
+      <td className="px-6 py-3" colSpan={3}>
+        <div className="flex items-center gap-4 whitespace-nowrap">
+          {rp.status === 'Planning' && rp.planning_end_date && (
+            <div className="flex items-center gap-1.5 text-[11px] text-purple-600 dark:text-purple-400 font-bold bg-purple-50/50 dark:bg-purple-900/30 px-3 py-1.5 rounded-full border border-purple-100/50 dark:border-purple-800/50 uppercase tracking-tight">
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Target: {format(new Date(rp.planning_end_date), 'MMM d, yyyy')}</span>
+            </div>
+          )}
+          {rp.status === 'Development' && rp.dev_end_date && (
+            <div className="flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400 font-bold bg-amber-50/50 dark:bg-amber-900/30 px-3 py-1.5 rounded-full border border-amber-100/50 dark:border-amber-800/50 uppercase tracking-tight">
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Target: {format(new Date(rp.dev_end_date), 'MMM d, yyyy')}</span>
+            </div>
+          )}
+          {rp.status === 'Released' && (
+            <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50/50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-full border border-emerald-100/50 dark:border-emerald-800/50 uppercase tracking-tight animate-bounce">
+              <PartyPopper className="w-3.5 h-3.5" />
+              <span>Liftoff!</span>
+            </div>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
+}
+
 interface SortableInitiativeRowProps {
   init: Initiative;
   handleFieldChange: (id: string, field: string, value: string | string[]) => void;
   handleReleasePhaseChange: (initiativeId: string, releaseId: string, newStatus: string) => void;
-  handleDeleteInitiative: (id: string, name: string) => void;
+  handleReleaseReorder?: (initiativeId: string, orderedIds: string[]) => void;
+  onArchive?: (id: string) => void;
   STATUS_OPTIONS: string[];
   GROUP_OPTIONS: string[];
 }
@@ -82,12 +185,32 @@ export function SortableInitiativeRow({
   init,
   handleFieldChange,
   handleReleasePhaseChange,
-  handleDeleteInitiative,
+  handleReleaseReorder,
+  onArchive,
   STATUS_OPTIONS,
   GROUP_OPTIONS,
 }: SortableInitiativeRowProps) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   const [isHovered, setIsHovered] = React.useState(false);
+  const [localReleasePlans, setLocalReleasePlans] = React.useState(init.releasePlans || []);
+
+  React.useEffect(() => {
+    setLocalReleasePlans(init.releasePlans || []);
+  }, [init.releasePlans]);
+
+  const releaseSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
+  const handleReleaseDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = localReleasePlans.findIndex(rp => rp.id === active.id);
+    const newIndex = localReleasePlans.findIndex(rp => rp.id === over.id);
+    const newOrder = arrayMove(localReleasePlans, oldIndex, newIndex);
+    setLocalReleasePlans(newOrder);
+    handleReleaseReorder?.(init.id, newOrder.map(rp => rp.id));
+  };
   const {
     attributes,
     listeners,
@@ -247,88 +370,47 @@ export function SortableInitiativeRow({
             ))}
           </select>
         </td>
-        <td className="px-6 py-4 text-slate-500 text-xs text-right">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleDeleteInitiative(init.id, init.name);
-            }}
-            className="p-2 text-slate-300 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
-            title="Delete Initiative"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+        <td className="px-6 py-4 text-right">
+          <div className="relative group/archive inline-block">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onArchive?.(init.id);
+              }}
+              className="p-2 text-slate-300 hover:text-amber-500 transition-colors rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20"
+            >
+              <Archive className="w-4 h-4" />
+            </button>
+            <div className="absolute bottom-full right-0 mb-2 px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover/archive:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none font-medium shadow-xl">
+              Archive initiative
+              <div className="absolute top-full right-3 border-4 border-transparent border-t-slate-800" />
+            </div>
+          </div>
         </td>
       </tr>
-      {isExpanded &&
-        !isDragging &&
-        init.releasePlans?.map((rp) => (
-          <tr key={rp.id} className="bg-blue-50/30 dark:bg-blue-900/20 border-l-4 border-l-blue-400 transition-colors border-b border-slate-100/50 dark:border-slate-700/50">
-            <td className="px-4"></td>
-            <td className="px-6 py-3">
-              <div className="flex items-center gap-2 pl-6">
-                <Rocket className="w-3.5 h-3.5 text-blue-400" />
-                <Link
-                  to={`/plan/${encodeURIComponent(init.id)}?view=release_plans#release-${rp.id}`}
-                  className="text-slate-600 dark:text-slate-300 font-medium text-xs hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors truncate"
-                  title={rp.goal}
-                >
-                  {rp.goal}
-                </Link>
-              </div>
-            </td>
-            <td className="px-6 py-3">
-              <select
-                value={rp.status}
-                onChange={(e) => handleReleasePhaseChange(init.id, rp.id, e.target.value)}
-                className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider w-full text-center border focus:ring-2 focus:ring-blue-400 outline-none transition-all ${rp.status === 'Pending'
-                  ? 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-700 dark:text-slate-300'
-                  : rp.status === 'Pre-Planning'
-                    ? 'bg-cyan-50 text-cyan-600 border-cyan-100 dark:bg-cyan-900/30 dark:text-cyan-400'
-                    : rp.status === 'Planning'
-                      ? 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/30 dark:text-blue-400'
-                      : rp.status === 'Development'
-                        ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/30 dark:text-amber-400'
-                        : rp.status === 'Released'
-                          ? 'bg-green-50 text-green-600 border-green-100 dark:bg-green-900/30 dark:text-green-400'
-                          : 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-700 dark:text-slate-300'
-                  }`}
-              >
-                {RELEASE_STATUS_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
-            </td>
-            <td className="px-6 py-3" colSpan={3}>
-              <div className="flex items-center gap-4 whitespace-nowrap">
-                {rp.status === 'Planning' && rp.planning_end_date && (
-                  <div className="flex items-center gap-1.5 text-[11px] text-purple-600 dark:text-purple-400 font-bold bg-purple-50/50 dark:bg-purple-900/30 px-3 py-1.5 rounded-full border border-purple-100/50 dark:border-purple-800/50 uppercase tracking-tight">
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>Target: {format(new Date(rp.planning_end_date), 'MMM d, yyyy')}</span>
-                  </div>
-                )}
-
-                {rp.status === 'Development' && rp.dev_end_date && (
-                  <div className="flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400 font-bold bg-amber-50/50 dark:bg-amber-900/30 px-3 py-1.5 rounded-full border border-amber-100/50 dark:border-amber-800/50 uppercase tracking-tight">
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>Target: {format(new Date(rp.dev_end_date), 'MMM d, yyyy')}</span>
-                  </div>
-                )}
-
-                {rp.status === 'Released' && (
-                  <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50/50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-full border border-emerald-100/50 dark:border-emerald-800/50 uppercase tracking-tight animate-bounce">
-                    <PartyPopper className="w-3.5 h-3.5" />
-                    <span>Liftoff!</span>
-                  </div>
-                )}
-              </div>
-            </td>
-          </tr>
-        ))}
+      {isExpanded && !isDragging && localReleasePlans.length > 0 && (
+        <DndContext
+          sensors={releaseSensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleReleaseDragEnd}
+        >
+          <SortableContext
+            items={localReleasePlans.map(rp => rp.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            {localReleasePlans.map((rp) => (
+              <SortableReleaseRow
+                key={rp.id}
+                rp={rp}
+                initiativeId={init.id}
+                handleReleasePhaseChange={handleReleasePhaseChange}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
+      )}
     </React.Fragment>
   );
 }
