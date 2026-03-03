@@ -98,7 +98,9 @@ const Dashboard = () => {
     const [deleteModal, setDeleteModal] = useState({ isOpen: false, item: null, type: 'initiative' });
     const [tasks, setTasks] = useState([]);
     const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState('timeline');
+    const [activeTab, setActiveTab] = useState(
+        () => localStorage.getItem('dashboard_active_tab') || 'timeline'
+    );
     const [highlightedFillerId, setHighlightedFillerId] = useState(null);
     const navigate = useNavigate();
     const syncTimeoutRef = useRef({});
@@ -144,8 +146,8 @@ const Dashboard = () => {
             if (table === 'tasks') {
                 loadTasks();
             } else {
-                // For initiatives, release plans, etc.
-                loadInitiatives();
+                // For initiatives, release plans, etc. — silent to avoid skeleton flash
+                loadInitiatives({ silent: true });
             }
         };
 
@@ -166,9 +168,9 @@ const Dashboard = () => {
         }
     };
 
-    const loadInitiatives = async () => {
+    const loadInitiatives = async ({ silent = false } = {}) => {
         try {
-            setIsLoading(true);
+            if (!silent) setIsLoading(true);
 
             if (!dataService.isConfigured()) {
                 setInitiatives([
@@ -485,6 +487,7 @@ const Dashboard = () => {
 
     const handleFillerClick = (fillerId) => {
         setActiveTab('roadmap');
+        localStorage.setItem('dashboard_active_tab', 'roadmap');
         setHighlightedFillerId(fillerId);
         setTimeout(() => setHighlightedFillerId(null), 2500);
     };
@@ -530,7 +533,7 @@ const Dashboard = () => {
                 {TABS.map(({ key, label, icon: Icon }) => (
                     <button
                         key={key}
-                        onClick={() => setActiveTab(key)}
+                        onClick={() => { setActiveTab(key); localStorage.setItem('dashboard_active_tab', key); }}
                         className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors ${
                             activeTab === key
                                 ? 'text-ss-primary dark:text-blue-400'

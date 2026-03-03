@@ -55,16 +55,16 @@ export function ReleaseProvider({ children, planId }) {
 
             // Re-fetch all data for this plan if any relevant table changed
             // (initiatives, release_plans, initial_planning, epics, deliverables)
-            loadReleaseData();
+            loadReleaseData({ silent: true });
         };
 
         window.addEventListener('supabase-update', handleRemoteUpdate);
         return () => window.removeEventListener('supabase-update', handleRemoteUpdate);
     }, [planId]);
 
-    const loadReleaseData = async () => {
+    const loadReleaseData = async ({ silent = false } = {}) => {
         try {
-            setIsLoading(true);
+            if (!silent) setIsLoading(true);
             setError(null);
 
             if (!dataService.isConfigured()) {
@@ -510,11 +510,22 @@ export function ReleaseProvider({ children, planId }) {
         if (!content || !content.trim()) return;
 
         try {
-            await dataService.createInitiativeUpdate(planId, content);
-            await dataService.updateInitiative(planId, { detailedStatus: '' });
+            // Clear locally immediately
+            setData(prev => ({
+                ...prev,
+                Initiative: { ...prev.Initiative, detailedStatus: '' }
+            }));
 
-            // Re-load data to get updated history and clear status
-            loadReleaseData();
+            const [newUpdate] = await Promise.all([
+                dataService.createInitiativeUpdate(planId, content),
+                dataService.updateInitiative(planId, { detailedStatus: '' }),
+            ]);
+
+            // Prepend the new update to the activity feed locally
+            setData(prev => ({
+                ...prev,
+                updates: [newUpdate, ...(prev.updates || [])]
+            }));
         } catch (err) {
             console.error('Failed to archive detailed status:', err);
         }
