@@ -39,12 +39,12 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem, onFillerClick, defau
     const tooltipTimerRef = useRef(null);
 
     const showTooltip = (e, content) => {
-        const target = e.currentTarget;
+        const mouseX = e.clientX;
+        const mouseY = e.clientY;
         clearTimeout(tooltipTimerRef.current);
         tooltipTimerRef.current = setTimeout(() => {
-            const rect = target.getBoundingClientRect();
-            const flipUp = rect.top > window.innerHeight * 0.55;
-            setTooltip({ x: rect.left + rect.width / 2, y: flipUp ? rect.top - 12 : rect.bottom + 12, flipUp, content });
+            const flipUp = mouseY > window.innerHeight * 0.55;
+            setTooltip({ x: mouseX, y: flipUp ? mouseY - 14 : mouseY + 18, flipUp, content });
         }, 500);
     };
     const hideTooltip = () => {
@@ -237,7 +237,12 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem, onFillerClick, defau
             if (item.initiativeName === 'Roadmap Fillers') return;
             if (item.group) groups.add(item.group);
             if (item.pm) pms.add(item.pm);
-            if (item.ux) uxs.add(item.ux);
+            if (item.ux) {
+                item.ux.split(',').forEach(u => {
+                    const trimmed = u.trim();
+                    if (trimmed) uxs.add(trimmed);
+                });
+            }
             if (item.techLead) {
                 item.techLead.split(',').forEach(tl => {
                     const trimmed = tl.trim();
@@ -294,7 +299,7 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem, onFillerClick, defau
         initiativeRows[item.initiativeName].push(item);
     });
 
-    const displayedInitiativeRows = totalActiveFilters === 0
+    const filteredRows = totalActiveFilters === 0
         ? initiativeRows
         : Object.fromEntries(
             Object.entries(initiativeRows).filter(([name, items]) => {
@@ -302,7 +307,10 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem, onFillerClick, defau
                 const item = items[0];
                 if (filters.group.length > 0 && !filters.group.includes(item?.group)) return false;
                 if (filters.pm.length > 0 && !filters.pm.includes(item?.pm)) return false;
-                if (filters.ux.length > 0 && !filters.ux.includes(item?.ux)) return false;
+                if (filters.ux.length > 0) {
+                    const itemUxMembers = (item?.ux || '').split(',').map(u => u.trim()).filter(Boolean);
+                    if (!filters.ux.some(u => itemUxMembers.includes(u))) return false;
+                }
                 if (filters.techLead.length > 0) {
                     const itemTechLeads = (item?.techLead || '').split(',').map(tl => tl.trim()).filter(Boolean);
                     if (!filters.techLead.some(tl => itemTechLeads.includes(tl))) return false;
@@ -310,6 +318,13 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem, onFillerClick, defau
                 return true;
             })
         );
+
+    // Always keep Roadmap Fillers at the bottom
+    const displayedInitiativeRows = (() => {
+        if (!('Roadmap Fillers' in filteredRows)) return filteredRows;
+        const { 'Roadmap Fillers': fillers, ...rest } = filteredRows;
+        return { ...rest, 'Roadmap Fillers': fillers };
+    })();
 
     const monthMarkers = [];
     let currentMonth = startOfMonth(range.min);

@@ -271,7 +271,7 @@ export function SortableInitiativeRow({
               </Link>
 
               {(init.detailedStatus || (init.deliverables && init.deliverables.some(d => d.status !== 'done'))) && (
-                <div className="invisible group-hover:visible absolute top-full left-0 mt-3 p-3 bg-ss-navy text-white rounded-lg shadow-2xl z-[1000] w-72 pointer-events-none before:content-[''] before:absolute before:bottom-full before:left-6 before:border-8 before:border-transparent before:border-b-ss-navy">
+                <div className="opacity-0 group-hover:opacity-100 group-hover:delay-500 transition-opacity duration-150 absolute top-full left-0 mt-3 p-3 bg-ss-navy text-white rounded-lg shadow-2xl z-[1000] w-72 pointer-events-none before:content-[''] before:absolute before:bottom-full before:left-6 before:border-8 before:border-transparent before:border-b-ss-navy">
                   <div className="text-sm font-bold mb-2 border-b border-blue-400/30 pb-1.5 text-center truncate">{init.name}</div>
 
                   {init.detailedStatus && (

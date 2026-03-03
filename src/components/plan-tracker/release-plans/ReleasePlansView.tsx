@@ -1,10 +1,25 @@
 import { useState, useEffect } from 'react';
-import { Plus, Layers } from 'lucide-react';
-import { DetailedPlanningGuidelines } from '../guidelines';
+import { Plus, Layers, GripVertical } from 'lucide-react';
 import { ReleasePlanGroup } from './ReleasePlanGroup';
 import AddReleaseModal from '../../AddReleaseModal';
 import AddEpicModal from '../../AddEpicModal';
 import DeleteConfirmationModal from '../../DeleteConfirmationModal';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface Epic {
   Name?: string;
@@ -41,9 +56,62 @@ interface ReleasePlansViewProps {
   updateReleasePlan: (planIndex: number, field: string, value: string) => void;
   addReleasePlan: (name: string) => Promise<void>;
   deleteReleasePlan: (planIndex: number) => void;
+  reorderReleasePlans: (orderedIds: string[]) => void;
   updateEpic: (planIndex: number, epicIndex: number, field: string, value: string) => void;
   addEpic: (planIndex: number, name: string) => Promise<void>;
   deleteEpic: (planIndex: number, epicIndex: number) => void;
+}
+
+interface SortableReleaseCardProps {
+  plan: ReleasePlan;
+  planIndex: number;
+  updateReleasePlan: (planIndex: number, field: string, value: string) => void;
+  onDeleteReleasePlan: (planIndex: number) => void;
+  updateEpic: (planIndex: number, epicIndex: number, field: string, value: string) => void;
+  onDeleteEpic: (planIndex: number, epicIndex: number) => void;
+  onAddEpic: (planIndex: number) => void;
+}
+
+function SortableReleaseCard({
+  plan,
+  planIndex,
+  updateReleasePlan,
+  onDeleteReleasePlan,
+  updateEpic,
+  onDeleteEpic,
+  onAddEpic,
+}: SortableReleaseCardProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: plan.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    position: 'relative' as const,
+    zIndex: isDragging ? 50 : 'auto' as const,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="relative group/release">
+      <button
+        {...attributes}
+        {...listeners}
+        className="absolute left-0 top-4 -translate-x-full pr-2 p-1.5 text-slate-300 hover:text-slate-500 dark:text-slate-600 dark:hover:text-slate-400 cursor-grab active:cursor-grabbing opacity-0 group-hover/release:opacity-100 transition-opacity rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+        title="Drag to reorder"
+      >
+        <GripVertical className="w-4 h-4" />
+      </button>
+      <ReleasePlanGroup
+        plan={plan}
+        planIndex={planIndex}
+        updateReleasePlan={updateReleasePlan}
+        onDeleteReleasePlan={onDeleteReleasePlan}
+        updateEpic={updateEpic}
+        onDeleteEpic={onDeleteEpic}
+        onAddEpic={onAddEpic}
+      />
+    </div>
+  );
 }
 
 interface DeleteModalState {
@@ -59,12 +127,27 @@ export function ReleasePlansView({
   updateReleasePlan,
   addReleasePlan,
   deleteReleasePlan,
+  reorderReleasePlans,
   updateEpic,
   addEpic,
   deleteEpic,
 }: ReleasePlansViewProps) {
   const releasePlans = data.Initiative?.ReleasePlan || [];
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = (event: { active: { id: string }; over: { id: string } | null }) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = releasePlans.findIndex(p => p.id === active.id);
+    const newIndex = releasePlans.findIndex(p => p.id === over.id);
+    const reordered = arrayMove(releasePlans, oldIndex, newIndex);
+    reorderReleasePlans(reordered.map(p => p.id));
+  };
   const [isEpicModalOpen, setIsEpicModalOpen] = useState(false);
   const [activePlanIndex, setActivePlanIndex] = useState<number | null>(null);
   const [deleteModal, setDeleteModal] = useState<DeleteModalState>({
@@ -128,8 +211,7 @@ export function ReleasePlansView({
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Release Plans Breakdown</h2>
+      <div className="flex justify-end items-center mb-4">
         <button
           onClick={() => setIsAddModalOpen(true)}
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-sm font-medium transition-all inline-flex items-center gap-2 text-sm"
@@ -138,8 +220,6 @@ export function ReleasePlansView({
           New Release
         </button>
       </div>
-
-      <DetailedPlanningGuidelines />
 
       {releasePlans.length === 0 ? (
         <div className="text-center py-20 bg-white dark:bg-slate-800 rounded-xl border border-dashed border-slate-300 dark:border-slate-600">
@@ -155,18 +235,24 @@ export function ReleasePlansView({
           </button>
         </div>
       ) : (
-        releasePlans.map((plan, idx) => (
-          <ReleasePlanGroup
-            key={plan.id || idx}
-            plan={plan}
-            planIndex={idx}
-            updateReleasePlan={updateReleasePlan}
-            onDeleteReleasePlan={(i) => handleDeleteReleaseRequest(i, plan.goal)}
-            updateEpic={updateEpic}
-            onDeleteEpic={(pi, ei) => handleDeleteEpicRequest(pi, ei, plan.Epics?.[ei]?.Name || '')}
-            onAddEpic={handleAddEpicClick}
-          />
-        ))
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={releasePlans.map(p => p.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-6">
+              {releasePlans.map((plan, idx) => (
+                <SortableReleaseCard
+                  key={plan.id || idx}
+                  plan={plan}
+                  planIndex={idx}
+                  updateReleasePlan={updateReleasePlan}
+                  onDeleteReleasePlan={(i) => handleDeleteReleaseRequest(i, plan.goal)}
+                  updateEpic={updateEpic}
+                  onDeleteEpic={(pi, ei) => handleDeleteEpicRequest(pi, ei, plan.Epics?.[ei]?.Name || '')}
+                  onAddEpic={handleAddEpicClick}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       <AddReleaseModal

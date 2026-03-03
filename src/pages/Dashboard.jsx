@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Target, Plus, Calendar, Rocket, Archive, ArchiveRestore, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { Target, Plus, Calendar, Rocket, Archive, ArchiveRestore, ChevronDown, ChevronUp, Trash2, Search, X } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import NewInitiativeModal from '../components/NewInitiativeModal';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import TimelineView from '../components/TimelineView';
-import { DashboardHeader, SortableInitiativeRow, InitiativeFilters, RoadmapFillers, STATUS_OPTIONS, PM_OPTIONS, UX_OPTIONS, GROUP_OPTIONS } from '../components/dashboard';
+import { DashboardHeader, SortableInitiativeRow, FilterChipBar, RoadmapFillers, STATUS_OPTIONS, PM_OPTIONS, UX_OPTIONS, GROUP_OPTIONS } from '../components/dashboard';
 import { AddTaskModal } from '../components/AddTaskModal';
 import { DashboardSkeleton } from '../components/skeletons';
 import { useFilters } from '../hooks/useFilters';
@@ -121,6 +121,22 @@ const Dashboard = () => {
     } = useFilters(activeInitiatives, {
         searchFields: ['name', 'techLead'],
     });
+
+    const initiativeFilterOptions = useMemo(() => ({
+        status: [...new Set(activeInitiatives.map(i => i.status).filter(Boolean))].sort(),
+        pm: [...new Set(activeInitiatives.map(i => i.pm).filter(Boolean))].sort(),
+        ux: [...new Set(
+            activeInitiatives.flatMap(i =>
+                (i.ux || '').split(',').map(u => u.trim()).filter(Boolean)
+            )
+        )].sort(),
+        group: [...new Set(activeInitiatives.map(i => i.group).filter(Boolean))].sort(),
+        techLead: [...new Set(
+            activeInitiatives.flatMap(i =>
+                (i.techLead || '').split(',').map(tl => tl.trim()).filter(Boolean)
+            )
+        )].sort(),
+    }), [activeInitiatives]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -575,6 +591,40 @@ const Dashboard = () => {
             {/* Initiatives Tab */}
             {activeTab === 'initiatives' && (
                 <>
+                <div className="flex items-center justify-between gap-3 px-1 py-1">
+                    <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                        <input
+                            type="text"
+                            value={filters.search}
+                            onChange={(e) => updateFilter('search', e.target.value)}
+                            placeholder="Search..."
+                            className="pl-8 pr-7 py-1 text-[11px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full outline-none focus:border-blue-300 dark:focus:border-blue-600 focus:bg-white dark:focus:bg-slate-700 transition-all text-slate-700 dark:text-slate-300 placeholder:text-slate-400 w-64"
+                        />
+                        {filters.search && (
+                            <button
+                                onClick={() => updateFilter('search', '')}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                            >
+                                <X className="w-3 h-3" />
+                            </button>
+                        )}
+                    </div>
+                    <FilterChipBar
+                        dimensions={[
+                            { key: 'status', label: 'Status' },
+                            { key: 'pm', label: 'PM' },
+                            { key: 'ux', label: 'UX' },
+                            { key: 'group', label: 'Group' },
+                            { key: 'techLead', label: 'Tech Lead' },
+                        ]}
+                        values={filters}
+                        options={initiativeFilterOptions}
+                        onToggle={(key, value) => toggleArrayFilter(key, value)}
+                        onClearKey={(key) => updateFilter(key, [])}
+                        onClearAll={clearFilters}
+                    />
+                </div>
                 <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
                     <DndContext
                         sensors={sensors}
@@ -593,7 +643,7 @@ const Dashboard = () => {
                                 </tr>
                             </thead>
                             <SortableContext
-                                items={activeInitiatives.map(i => i.id)}
+                                items={filteredItems.map(i => i.id)}
                                 strategy={verticalListSortingStrategy}
                             >
                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -603,8 +653,14 @@ const Dashboard = () => {
                                                 No initiatives yet. Create your first one!
                                             </td>
                                         </tr>
+                                    ) : filteredItems.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={6} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                                                No initiatives match your filters.
+                                            </td>
+                                        </tr>
                                     ) : (
-                                        activeInitiatives.map((init) => (
+                                        filteredItems.map((init) => (
                                             <SortableInitiativeRow
                                                 key={init.id}
                                                 init={init}

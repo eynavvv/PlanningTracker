@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { format } from 'date-fns';
-import { Plus, Trash2, GripVertical, ExternalLink, Calendar, Layers, ChevronDown, ChevronUp, Pencil, Archive, ArchiveRestore } from 'lucide-react';
+import { Plus, Trash2, GripVertical, ExternalLink, Calendar, Layers, ChevronDown, ChevronUp, Pencil, Archive, ArchiveRestore, Search, X } from 'lucide-react';
 import TaskLiveStatus from '@/components/TaskLiveStatus';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -21,6 +21,7 @@ import {
 import type { Task, TaskPhase, TaskType, TaskBacklog } from '@/types';
 import { TASK_PHASE_OPTIONS, TASK_TYPE_OPTIONS, TASK_BACKLOG_OPTIONS } from '@/types';
 import { GROUP_OPTIONS } from './constants';
+import { FilterChipBar } from './FilterChipBar';
 
 interface RoadmapFillersProps {
   tasks: Task[];
@@ -31,8 +32,8 @@ interface RoadmapFillersProps {
   onReorderTasks: (orderedIds: string[]) => void;
   onArchiveTask?: (id: string) => void;
   onUnarchiveTask?: (id: string) => void;
-  isCollapsed?: boolean;
-  onToggleCollapse?: () => void;
+  isCollapsed?: boolean; // unused, kept for backward compatibility
+  onToggleCollapse?: () => void; // unused, kept for backward compatibility
   highlightedTaskId?: string | null;
 }
 
@@ -344,6 +345,16 @@ function SortableTaskRow({ task, onUpdate, onArchive, isHighlighted = false }: S
   );
 }
 
+const FILTER_DIMENSIONS = [
+  { key: 'group', label: 'Group' },
+  { key: 'phase', label: 'Phase' },
+  { key: 'type', label: 'Type' },
+  { key: 'backlog', label: 'Backlog' },
+] as const;
+
+type TaskFilterKey = typeof FILTER_DIMENSIONS[number]['key'];
+type TaskFilterState = Record<TaskFilterKey, string[]>;
+
 export function RoadmapFillers({
   tasks,
   archivedTasks = [],
@@ -358,6 +369,37 @@ export function RoadmapFillers({
   highlightedTaskId,
 }: RoadmapFillersProps) {
   const [archiveSectionOpen, setArchiveSectionOpen] = useState(false);
+  const [taskFilters, setTaskFilters] = useState<TaskFilterState>({ group: [], phase: [], type: [], backlog: [] });
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filterOptions = useMemo<TaskFilterState>(() => ({
+    group: [...new Set(tasks.map(t => t.group).filter(Boolean) as string[])].sort(),
+    phase: [...new Set(tasks.map(t => t.phase).filter(Boolean) as string[])].sort(),
+    type: [...new Set(tasks.map(t => t.type).filter(Boolean) as string[])].sort(),
+    backlog: [...new Set(tasks.map(t => t.backlog).filter(Boolean) as string[])].sort(),
+  }), [tasks]);
+
+  const filteredTasks = useMemo(() => tasks.filter(task => {
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      if (!task.name.toLowerCase().includes(q) && !(task.description || '').toLowerCase().includes(q)) return false;
+    }
+    if (taskFilters.group.length > 0 && !taskFilters.group.includes(task.group || '')) return false;
+    if (taskFilters.phase.length > 0 && !taskFilters.phase.includes(task.phase)) return false;
+    if (taskFilters.type.length > 0 && !taskFilters.type.includes(task.type || '')) return false;
+    if (taskFilters.backlog.length > 0 && !taskFilters.backlog.includes(task.backlog || '')) return false;
+    return true;
+  }), [tasks, taskFilters, searchQuery]);
+
+  const toggleTaskFilter = (key: string, value: string) => {
+    setTaskFilters(prev => ({
+      ...prev,
+      [key]: (prev[key as TaskFilterKey] || []).includes(value)
+        ? prev[key as TaskFilterKey].filter(v => v !== value)
+        : [...prev[key as TaskFilterKey], value],
+    }));
+  };
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -381,28 +423,39 @@ export function RoadmapFillers({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-      {/* Collapsible Header */}
-      <button
-        onClick={onToggleCollapse}
-        className="w-full px-6 py-3 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
-      >
-        <div className="flex items-center gap-3">
-          <Layers className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-          <h2 className="font-bold text-slate-800 dark:text-slate-100">Roadmap Fillers</h2>
-          <span className="text-[10px] bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-bold px-2 py-0.5 rounded uppercase tracking-wider">
-            {tasks.length} ITEMS
-          </span>
+    <div className="flex flex-col gap-6">
+      {/* Search + Filter bar */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search..."
+            className="pl-8 pr-7 py-1 text-[11px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full outline-none focus:border-blue-300 dark:focus:border-blue-600 focus:bg-white dark:focus:bg-slate-700 transition-all text-slate-700 dark:text-slate-300 placeholder:text-slate-400 w-64"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
         </div>
-        <div className="flex items-center gap-2 text-slate-400">
-          <span className="text-xs font-medium">{isCollapsed ? 'Expand' : 'Collapse'}</span>
-          {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-        </div>
-      </button>
+        <FilterChipBar
+          dimensions={FILTER_DIMENSIONS as unknown as { key: string; label: string }[]}
+          values={taskFilters}
+          options={filterOptions}
+          onToggle={toggleTaskFilter}
+          onClearKey={(key) => setTaskFilters(prev => ({ ...prev, [key]: [] }))}
+          onClearAll={() => setTaskFilters({ group: [], phase: [], type: [], backlog: [] })}
+        />
+      </div>
 
-      {/* Table */}
-      {!isCollapsed && (
-        <>
+      {/* Main card */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
           <div className="overflow-x-auto">
             <DndContext
               sensors={sensors}
@@ -424,7 +477,7 @@ export function RoadmapFillers({
                   </tr>
                 </thead>
                 <SortableContext
-                  items={tasks.map(t => t.id)}
+                  items={filteredTasks.map(t => t.id)}
                   strategy={verticalListSortingStrategy}
                 >
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -444,8 +497,14 @@ export function RoadmapFillers({
                           </div>
                         </td>
                       </tr>
+                    ) : filteredTasks.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                          No tasks match your search or filters.
+                        </td>
+                      </tr>
                     ) : (
-                      tasks.map((task) => (
+                      filteredTasks.map((task) => (
                         <SortableTaskRow
                           key={task.id}
                           task={task}
@@ -469,8 +528,6 @@ export function RoadmapFillers({
               Add Task
             </button>
           </div>
-        </>
-      )}
 
       {/* Archived Tasks Section */}
       {archivedTasks.length > 0 && (
@@ -536,6 +593,7 @@ export function RoadmapFillers({
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }

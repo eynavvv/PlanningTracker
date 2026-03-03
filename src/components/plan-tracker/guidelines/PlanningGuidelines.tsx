@@ -10,8 +10,8 @@ const guidelines = [
   { type: 'Existing capability - expansion to additional', problem: '1-2 days', prd: '1-2 days', solutioning: '1-2 weeks', releasePlan: '1 week', total: '2-3.5 weeks' },
 ];
 
-export function PlanningGuidelines() {
-  const [isOpen, setIsOpen] = useState(false);
+export function PlanningGuidelines({ initialOpen = false }: { initialOpen?: boolean }) {
+  const [isOpen, setIsOpen] = useState(initialOpen);
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">

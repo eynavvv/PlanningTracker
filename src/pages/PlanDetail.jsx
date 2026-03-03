@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Clock, Layers } from 'lucide-react';
+import { ArrowLeft, Clock, Layers, Target, HelpCircle } from 'lucide-react';
 import PlanTracker from '../components/PlanTracker';
 import { ReleaseProvider, useReleaseData } from '../hooks/useReleaseData';
 import InitiativeLiveStatus from '../components/InitiativeLiveStatus';
 import { PlanDetailSkeleton } from '../components/skeletons';
+import { GuidelinesModal } from '../components/plan-tracker/guidelines';
 
 const PlanHeader = () => {
     const { data, isSyncing, updateInitiativeMeta } = useReleaseData();
@@ -96,6 +97,14 @@ const PlanHeader = () => {
 
 const ContentWrapper = ({ activeView, setActiveView }) => {
     const { isLoading, error } = useReleaseData();
+    const [isGuidelinesOpen, setIsGuidelinesOpen] = useState(false);
+    const scrollContainerRef = React.useRef(null);
+
+    useEffect(() => {
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = 0;
+        }
+    }, []);
 
     if (isLoading) {
         return <PlanDetailSkeleton />;
@@ -116,38 +125,60 @@ const ContentWrapper = ({ activeView, setActiveView }) => {
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col font-inter">
             <PlanHeader />
-            <div className="flex-1 overflow-auto">
+            <div ref={scrollContainerRef} className="flex-1 overflow-auto">
                 <div className="max-w-[1800px] mx-auto p-6">
-                    {/* Live Status Section at the Top */}
-                    <InitiativeLiveStatus />
-
-                    {/* View Switcher Tabs under it */}
-                    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-1 flex gap-1 mb-6 inline-flex shadow-sm">
+                    {/* Tab bar + Guidelines button */}
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-1 flex gap-1 shadow-sm">
+                            <button
+                                onClick={() => setActiveView('live_status')}
+                                className={`flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-lg transition-all ${activeView === 'live_status'
+                                    ? 'bg-ss-navy text-white shadow-md'
+                                    : 'bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                    }`}
+                            >
+                                <Target className="w-4 h-4" />
+                                Live Status
+                            </button>
+                            <button
+                                onClick={() => setActiveView('initial_planning')}
+                                className={`flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-lg transition-all ${activeView === 'initial_planning'
+                                    ? 'bg-ss-navy text-white shadow-md'
+                                    : 'bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                    }`}
+                            >
+                                <Clock className="w-4 h-4" />
+                                Initiative Planning
+                            </button>
+                            <button
+                                onClick={() => setActiveView('release_plans')}
+                                className={`flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-lg transition-all ${activeView === 'release_plans'
+                                    ? 'bg-ss-navy text-white shadow-md'
+                                    : 'bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                    }`}
+                            >
+                                <Layers className="w-4 h-4" />
+                                Release Plans
+                            </button>
+                        </div>
                         <button
-                            onClick={() => setActiveView('initial_planning')}
-                            className={`flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-lg transition-all ${activeView === 'initial_planning'
-                                ? 'bg-ss-navy text-white shadow-md'
-                                : 'bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
-                                } `}
+                            onClick={() => setIsGuidelinesOpen(true)}
+                            className="w-9 h-9 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-blue-600 hover:border-blue-300 dark:hover:border-blue-700 transition-all shadow-sm"
+                            title="View Guidelines"
                         >
-                            <Clock className="w-4 h-4" />
-                            Initiative Planning
-                        </button>
-                        <button
-                            onClick={() => setActiveView('release_plans')}
-                            className={`flex items-center gap-2 px-6 py-2.5 text-sm font-bold rounded-lg transition-all ${activeView === 'release_plans'
-                                ? 'bg-ss-navy text-white shadow-md'
-                                : 'bg-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
-                                } `}
-                        >
-                            <Layers className="w-4 h-4" />
-                            Release Plans
+                            <HelpCircle className="w-5 h-5" />
                         </button>
                     </div>
 
-                    <PlanTracker activeView={activeView} />
+                    {/* Tab Content */}
+                    {activeView === 'live_status' && <InitiativeLiveStatus />}
+                    {(activeView === 'initial_planning' || activeView === 'release_plans') && (
+                        <PlanTracker activeView={activeView} />
+                    )}
                 </div>
             </div>
+
+            {isGuidelinesOpen && <GuidelinesModal onClose={() => setIsGuidelinesOpen(false)} />}
         </div>
     );
 };
@@ -155,7 +186,7 @@ const ContentWrapper = ({ activeView, setActiveView }) => {
 const PlanDetail = () => {
     const { id } = useParams();
     const [searchParams] = useSearchParams();
-    const initialView = searchParams.get('view') || 'initial_planning';
+    const initialView = searchParams.get('view') || 'live_status';
     const [activeView, setActiveView] = useState(initialView);
 
     useEffect(() => {

@@ -373,6 +373,23 @@ export function ReleaseProvider({ children, planId }) {
         }
     }, [data.Initiative.ReleasePlan, planId]);
 
+    const reorderReleasePlans = useCallback(async (orderedIds) => {
+        setData(prev => {
+            const reordered = orderedIds
+                .map(id => prev.Initiative.ReleasePlan.find(p => p.id === id))
+                .filter(Boolean);
+            return { ...prev, Initiative: { ...prev.Initiative, ReleasePlan: reordered } };
+        });
+        try {
+            if (dataService.isConfigured()) {
+                await dataService.updateReleasePlanOrder(planId, orderedIds);
+            }
+        } catch (err) {
+            console.error('Failed to reorder release plans:', err);
+            loadReleaseData();
+        }
+    }, [planId, loadReleaseData]);
+
     const deleteReleasePlan = useCallback(async (planIndex) => {
         const plan = data.Initiative.ReleasePlan[planIndex];
         if (!plan) return;
@@ -541,6 +558,7 @@ export function ReleaseProvider({ children, planId }) {
         updateReleasePlan,
         addReleasePlan,
         deleteReleasePlan,
+        reorderReleasePlans,
         addEpic,
         updateEpic,
         deleteEpic,

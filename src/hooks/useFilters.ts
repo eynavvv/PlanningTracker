@@ -7,6 +7,7 @@ const initialFilters: FilterState = {
   pm: [],
   ux: [],
   group: [],
+  techLead: [],
 };
 
 export function useFilters<T extends Record<string, unknown>>(
@@ -20,7 +21,7 @@ export function useFilters<T extends Record<string, unknown>>(
   }, []);
 
   const toggleArrayFilter = useCallback(
-    (key: 'status' | 'pm' | 'ux' | 'group', value: string) => {
+    (key: 'status' | 'pm' | 'ux' | 'group' | 'techLead', value: string) => {
       setFilters((prev) => ({
         ...prev,
         [key]: prev[key].includes(value)
@@ -57,14 +58,27 @@ export function useFilters<T extends Record<string, unknown>>(
         return false;
       }
 
-      // UX filter
-      if (filters.ux.length > 0 && !filters.ux.includes(item.ux as string)) {
-        return false;
+      // UX filter (supports comma-separated values)
+      if (filters.ux.length > 0) {
+        const itemUxMembers = ((item.ux as string) || '')
+          .split(',')
+          .map((u) => u.trim())
+          .filter(Boolean);
+        if (!filters.ux.some((u) => itemUxMembers.includes(u))) return false;
       }
 
       // Group filter
       if (filters.group.length > 0 && !filters.group.includes(item.group as string)) {
         return false;
+      }
+
+      // Tech Lead filter (supports comma-separated values)
+      if (filters.techLead.length > 0) {
+        const itemTechLeads = ((item.techLead as string) || '')
+          .split(',')
+          .map((tl) => tl.trim())
+          .filter(Boolean);
+        if (!filters.techLead.some((tl) => itemTechLeads.includes(tl))) return false;
       }
 
       return true;
@@ -77,7 +91,8 @@ export function useFilters<T extends Record<string, unknown>>(
       filters.status.length > 0 ||
       filters.pm.length > 0 ||
       filters.ux.length > 0 ||
-      filters.group.length > 0
+      filters.group.length > 0 ||
+      filters.techLead.length > 0
     );
   }, [filters]);
 

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Info, ChevronDown, ChevronRight } from 'lucide-react';
 
-export function ReleaseProcessGuidelines() {
-  const [isOpen, setIsOpen] = useState(false);
+export function ReleaseProcessGuidelines({ initialOpen = false }: { initialOpen?: boolean }) {
+  const [isOpen, setIsOpen] = useState(initialOpen);
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden mt-4">
