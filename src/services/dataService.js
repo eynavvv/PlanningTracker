@@ -66,7 +66,7 @@ class DataService {
             // Fetch all release plans
             const { data: releasePlans, error: rpError } = await supabase
                 .from('release_plans')
-                .select('id, initiative_id, goal, pre_planning_start_date, pre_planning_end_date, planning_start_date, planning_end_date, dev_start_date, dev_end_date, qa_event_date, status, order_index')
+                .select('id, initiative_id, goal, pre_planning_start_date, pre_planning_end_date, planning_start_date, planning_end_date, dev_start_date, dev_end_date, qa_event_date, external_release_date, status, order_index')
                 .order('order_index', { ascending: true });
 
             if (rpError) throw rpError;

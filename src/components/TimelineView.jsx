@@ -17,7 +17,7 @@ import {
     isEqual
 } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronUp, Calendar, Info, Clock, Layers, Rocket, Eye, EyeOff } from 'lucide-react';
+import { ChevronDown, ChevronUp, Calendar, Info, Clock, Layers, Rocket, Eye, EyeOff, Flag } from 'lucide-react';
 import { getHolidaysInRange, getHolidayStyle } from '../utils/holidayUtils';
 
 // Team logo images
@@ -164,6 +164,29 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem, onFillerClick, defau
                             startDate: new Date(rp.qa_event_date),
                             endDate: new Date(rp.qa_event_date),
                             type: 'qa-event',
+                            isMilestone: true,
+                            initiativeName: initiative.name,
+                            initiativeId: initiative.id,
+                            group: initiative.group,
+                            pm: initiative.pm,
+                            ux: initiative.ux,
+                            techLead: initiative.techLead,
+                            releaseId: rp.id,
+                            detailedStatus: initiative.detailedStatus,
+                            overallStatus: initiative.status,
+                            deliverables: initiative.deliverables
+                        });
+                    }
+
+                    // Target Release Date Milestone (official production / feature flag open)
+                    if (rp.external_release_date) {
+                        items.push({
+                            id: `release-target-${rp.id}`,
+                            name: rp.goal,
+                            phase: 'Target Release',
+                            startDate: new Date(rp.external_release_date),
+                            endDate: new Date(rp.external_release_date),
+                            type: 'release-target',
                             isMilestone: true,
                             initiativeName: initiative.name,
                             initiativeId: initiative.id,
@@ -811,14 +834,14 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem, onFillerClick, defau
                                                     // Render milestone (icon above with anchor dot on timeline)
                                                     if (item.isMilestone) {
                                                         const isFiller = item.type === 'roadmap-filler';
-                                                        const mainColor = isFiller ? 'indigo' : 'orange';
-                                                        const gradientFrom = isFiller ? 'from-indigo-400' : 'from-orange-400';
-                                                        const gradientTo = isFiller ? 'to-indigo-600' : 'to-orange-600';
-                                                        const glowColor = isFiller ? 'bg-indigo-400/30' : 'bg-orange-400/30';
-                                                        const borderColor = isFiller ? 'border-indigo-300' : 'border-orange-300';
-                                                        const anchorColor = isFiller ? 'bg-indigo-500' : 'bg-orange-500';
+                                                        const isTargetRelease = item.type === 'release-target';
+                                                        const gradientFrom = isFiller ? 'from-indigo-400' : isTargetRelease ? 'from-green-400' : 'from-orange-400';
+                                                        const gradientTo = isFiller ? 'to-indigo-600' : isTargetRelease ? 'to-emerald-600' : 'to-orange-600';
+                                                        const glowColor = isFiller ? 'bg-indigo-400/30' : isTargetRelease ? 'bg-green-400/30' : 'bg-orange-400/30';
+                                                        const borderColor = isFiller ? 'border-indigo-300' : isTargetRelease ? 'border-green-300' : 'border-orange-300';
+                                                        const anchorColor = isFiller ? 'bg-indigo-500' : isTargetRelease ? 'bg-green-500' : 'bg-orange-500';
 
-                                                        const isDraggableMilestone = item.type === 'qa-event' || item.type === 'roadmap-filler';
+                                                        const isDraggableMilestone = item.type === 'qa-event' || item.type === 'roadmap-filler' || item.type === 'release-target';
 
                                                         return (
                                                             <div
@@ -858,13 +881,15 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem, onFillerClick, defau
                                                                             <div className={`w-6 h-6 bg-gradient-to-br ${gradientFrom} ${gradientTo} rounded-lg shadow-lg border-2 ${borderColor} flex items-center justify-center transform hover:scale-110 transition-transform cursor-pointer`}>
                                                                                 {isFiller ? (
                                                                                     <Rocket className="w-3.5 h-3.5 text-white" />
+                                                                                ) : isTargetRelease ? (
+                                                                                    <Flag className="w-3.5 h-3.5 text-white" />
                                                                                 ) : (
                                                                                     <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-white" fill="currentColor">
                                                                                         <path d="M12 2C13.1 2 14 2.9 14 4C14 4.1 14 4.2 14 4.3C16.4 5.2 18 7.4 18 10V11H19C19.6 11 20 11.4 20 12S19.6 13 19 13H18V14C18 15.1 17.8 16.2 17.4 17.2L19.5 19.3C19.9 19.7 19.9 20.3 19.5 20.7C19.1 21.1 18.5 21.1 18.1 20.7L16.3 18.9C15.2 19.6 13.7 20 12 20C10.3 20 8.8 19.6 7.7 18.9L5.9 20.7C5.5 21.1 4.9 21.1 4.5 20.7C4.1 20.3 4.1 19.7 4.5 19.3L6.6 17.2C6.2 16.2 6 15.1 6 14V13H5C4.4 13 4 12.6 4 12S4.4 11 5 11H6V10C6 7.4 7.6 5.2 10 4.3C10 4.2 10 4.1 10 4C10 2.9 10.9 2 12 2ZM12 6C9.8 6 8 7.8 8 10V14C8 16.2 9.8 18 12 18C14.2 18 16 16.2 16 14V10C16 7.8 14.2 6 12 6ZM12 8C12.6 8 13 8.4 13 9V11C13 11.6 12.6 12 12 12C11.4 12 11 11.6 11 11V9C11 8.4 11.4 8 12 8Z" />
                                                                                     </svg>
                                                                                 )}
                                                                             </div>
-                                                                            {!isFiller && (
+                                                                            {!isFiller && !isTargetRelease && (
                                                                                 <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border border-white flex items-center justify-center shadow-sm">
                                                                                     <svg viewBox="0 0 24 24" className="w-1.5 h-1.5 text-white" fill="none" stroke="currentColor" strokeWidth="4">
                                                                                         <path d="M5 12l5 5L20 7" />

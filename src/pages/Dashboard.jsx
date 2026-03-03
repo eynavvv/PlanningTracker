@@ -435,6 +435,10 @@ const Dashboard = () => {
                 await dataService.updateReleasePlan(item.initiativeId, item.releaseId, {
                     qaEventDate: startDateStr
                 });
+            } else if (item.type === 'release-target') {
+                await dataService.updateReleasePlan(item.initiativeId, item.releaseId, {
+                    externalReleaseDate: startDateStr
+                });
             } else if (item.type === 'roadmap-filler') {
                 await dataService.updateTask(item.fillerId, { target_date: startDateStr });
             }
@@ -468,6 +472,8 @@ const Dashboard = () => {
                                         return { ...rp, planning_start_date: startDateStr, planning_end_date: endDateStr };
                                     } else if (item.type === 'qa-event') {
                                         return { ...rp, qa_event_date: startDateStr };
+                                    } else if (item.type === 'release-target') {
+                                        return { ...rp, external_release_date: startDateStr };
                                     } else {
                                         return { ...rp, dev_start_date: startDateStr, dev_end_date: endDateStr };
                                     }
