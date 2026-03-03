@@ -1,31 +1,30 @@
 import { Skeleton } from '../ui/Skeleton';
 
-// Each row: spacer (s) and bar (b) flex proportions out of 100
 const TIMELINE_ROWS = [
-  { label: 'w-36', segs: [{s:0,b:32},{s:4,b:42}] },
-  { label: 'w-28', segs: [{s:12,b:60}] },
-  { label: 'w-44', segs: [{s:0,b:28},{s:5,b:38},{s:4,b:18}] },
-  { label: 'w-32', segs: [{s:20,b:52}] },
-  { label: 'w-40', segs: [{s:5,b:35},{s:4,b:38}] },
-  { label: 'w-36', segs: [{s:0,b:30},{s:4,b:28},{s:4,b:24}] },
-  { label: 'w-28', segs: [{s:15,b:65}] },
+  { label: 'w-40', segs: [{ s: 0, b: 30 }, { s: 6, b: 38 }] },
+  { label: 'w-28', segs: [{ s: 14, b: 55 }] },
+  { label: 'w-48', segs: [{ s: 0, b: 25 }, { s: 5, b: 32 }, { s: 4, b: 20 }] },
+  { label: 'w-36', segs: [{ s: 22, b: 48 }] },
+  { label: 'w-44', segs: [{ s: 5, b: 38 }, { s: 4, b: 32 }] },
+  { label: 'w-32', segs: [{ s: 0, b: 28 }, { s: 4, b: 26 }, { s: 3, b: 22 }] },
+  { label: 'w-36', segs: [{ s: 18, b: 60 }] },
 ];
 
 export function DashboardSkeleton() {
   return (
     <div className="flex flex-col gap-0">
-      {/* Header */}
+      {/* Header: logo + title */}
       <div className="flex items-center gap-5 pb-4">
-        <Skeleton className="h-16 w-16" />
+        <Skeleton className="h-12 w-28 rounded-lg" />
         <div>
-          <Skeleton className="h-8 w-56 mb-0.5" />
+          <Skeleton className="h-8 w-56 mb-1.5 rounded-lg" />
           <Skeleton className="h-4 w-44" variant="text" />
         </div>
       </div>
 
-      {/* Tab bar */}
+      {/* Tab bar: Timeline / Initiatives / Roadmap Fillers */}
       <div className="flex gap-1 border-b border-slate-200 dark:border-slate-700 pb-px">
-        {[{ w: 'w-20' }, { w: 'w-24' }, { w: 'w-32' }].map(({ w }, i) => (
+        {[{ w: 'w-20' }, { w: 'w-24' }, { w: 'w-36' }].map(({ w }, i) => (
           <div key={i} className="flex items-center gap-2 px-5 py-3">
             <Skeleton className="h-4 w-4" variant="circular" />
             <Skeleton className={`h-4 ${w}`} variant="text" />
@@ -33,28 +32,28 @@ export function DashboardSkeleton() {
         ))}
       </div>
 
-      {/* Timeline area */}
-      <div className="mt-5 flex flex-col gap-3">
-        {/* Toolbar */}
-        <div className="flex items-center gap-2 mb-1">
-          <Skeleton className="h-6 w-20 rounded-full" />
-          <Skeleton className="h-6 w-16 rounded-full" />
-          <Skeleton className="h-6 w-14 rounded-full" />
-          <Skeleton className="h-6 w-16 rounded-full" />
-          <Skeleton className="h-6 w-24 rounded-full" />
+      {/* Timeline tab content */}
+      <div className="mt-6 flex flex-col gap-4">
+        {/* Filter chips row */}
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-7 w-20 rounded-full" />
+          <Skeleton className="h-7 w-16 rounded-full" />
+          <Skeleton className="h-7 w-14 rounded-full" />
+          <Skeleton className="h-7 w-16 rounded-full" />
+          <Skeleton className="h-7 w-24 rounded-full" />
         </div>
 
         {/* Month header */}
-        <div className="flex gap-0.5">
+        <div className="flex gap-0.5 mt-1">
           {[14, 18, 12, 16, 14, 10, 16].map((flex, i) => (
-            <Skeleton key={i} className="h-6" style={{ flex }} />
+            <Skeleton key={i} className="h-6 rounded" style={{ flex }} />
           ))}
         </div>
 
         {/* Week header */}
         <div className="flex gap-0.5 -mt-1">
           {Array.from({ length: 14 }).map((_, i) => (
-            <Skeleton key={i} className="h-4 flex-1" />
+            <Skeleton key={i} className="h-4 flex-1 rounded" />
           ))}
         </div>
 

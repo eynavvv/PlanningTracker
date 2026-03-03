@@ -6,6 +6,7 @@ export interface FilterState {
   pm: string[];
   ux: string[];
   group: string[];
+  techLead: string[];
 }
 
 export interface FilterConfig<T> {
@@ -17,4 +18,5 @@ export interface FilterOptions {
   pm: string[];
   ux: string[];
   group: string[];
+  techLead: string[];
 }

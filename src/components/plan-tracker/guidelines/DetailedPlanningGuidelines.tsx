@@ -12,8 +12,8 @@ const steps = [
   { id: 8, by: 'All', activity: 'Timeline for PM, UX reviews & QA event(s)', time: '1h [W2 Thu]', output: 'Plan' },
 ];
 
-export function DetailedPlanningGuidelines() {
-  const [isOpen, setIsOpen] = useState(false);
+export function DetailedPlanningGuidelines({ initialOpen = false }: { initialOpen?: boolean }) {
+  const [isOpen, setIsOpen] = useState(initialOpen);
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden mb-6">

@@ -100,16 +100,17 @@ export default function TaskLiveStatus({ taskId, initialDetailedStatus, onUpdate
           <textarea
             value={detailedStatus}
             onChange={(e) => handleStatusChange(e.target.value)}
-            className="peer w-full p-4 rounded-xl border-2 border-slate-100 dark:border-slate-700 text-sm italic text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 min-h-[140px] outline-none focus:border-blue-400/50 transition-all resize-none shadow-sm"
+            className="peer w-full p-4 rounded-xl border-2 border-slate-100 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md text-sm italic text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 min-h-[140px] outline-none focus:border-blue-400/50 transition-all resize-none shadow-sm"
             placeholder="Type a quick summary..."
           />
           {detailedStatus && detailedStatus.trim() && (
             <button
               onClick={handleArchive}
-              className="absolute bottom-3 right-3 text-slate-300 hover:text-slate-500 dark:text-slate-600 dark:hover:text-slate-400 rounded-lg p-1.5 transition-colors opacity-0 group-hover/focus:opacity-100 peer-focus:!opacity-0 peer-focus:pointer-events-none"
+              className="absolute bottom-3 right-3 flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-[11px] font-semibold rounded-lg shadow-sm transition-all opacity-0 group-hover/focus:opacity-100 peer-focus:!opacity-0 peer-focus:pointer-events-none"
               title="Archive this status to the Activity Feed and clear"
             >
-              <Send className="w-3.5 h-3.5" />
+              <Send className="w-3 h-3" />
+              Activity Feed
             </button>
           )}
         </div>

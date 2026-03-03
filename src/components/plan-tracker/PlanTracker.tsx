@@ -14,6 +14,7 @@ export function PlanTracker({ activeView }: PlanTrackerProps) {
     updateReleasePlan,
     addReleasePlan,
     deleteReleasePlan,
+    reorderReleasePlans,
     updateEpic,
     addEpic,
     deleteEpic,
@@ -51,6 +52,7 @@ export function PlanTracker({ activeView }: PlanTrackerProps) {
           updateReleasePlan={updateReleasePlan}
           addReleasePlan={addReleasePlan}
           deleteReleasePlan={deleteReleasePlan}
+          reorderReleasePlans={reorderReleasePlans}
           updateEpic={updateEpic}
           addEpic={addEpic}
           deleteEpic={deleteEpic}
