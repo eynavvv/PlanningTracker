@@ -38,10 +38,14 @@ export default function TaskLiveStatus({ taskId, initialDetailedStatus, onUpdate
 
   const handleArchive = async () => {
     if (!detailedStatus.trim()) return;
-    const newUpdate = await dataService.createTaskUpdate(taskId, detailedStatus.trim());
-    setUpdates(prev => [newUpdate, ...prev]);
+    const content = detailedStatus.trim();
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     setDetailedStatus('');
-    onUpdateDetailedStatus('');
+    const [newUpdate] = await Promise.all([
+      dataService.createTaskUpdate(taskId, content),
+      dataService.updateTask(taskId, { detailed_status: '' }),
+    ]);
+    setUpdates(prev => [newUpdate, ...prev]);
   };
 
   const handleAddDeliverable = async (e?: React.FormEvent) => {

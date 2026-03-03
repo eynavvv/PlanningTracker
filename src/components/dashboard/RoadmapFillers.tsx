@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
-import { Plus, Trash2, GripVertical, ExternalLink, Calendar, Layers, ChevronDown, ChevronUp, Pencil, Activity, Archive, ArchiveRestore } from 'lucide-react';
+import { Plus, Trash2, GripVertical, ExternalLink, Calendar, Layers, ChevronDown, ChevronUp, Pencil, Archive, ArchiveRestore } from 'lucide-react';
 import TaskLiveStatus from '@/components/TaskLiveStatus';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -157,9 +157,9 @@ function SortableTaskRow({ task, onUpdate, onArchive, isHighlighted = false }: S
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className={`p-1 rounded-lg transition-colors ${isExpanded ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
-            title={isExpanded ? 'Collapse live status' : 'Expand live status'}
+            title={isExpanded ? 'Collapse details' : 'Show details'}
           >
-            {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <Activity className="w-3.5 h-3.5" />}
+            {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>
         </div>
       </td>
