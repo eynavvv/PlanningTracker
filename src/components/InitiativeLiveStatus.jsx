@@ -14,7 +14,7 @@ const STATUS_COLORS = {
     'Initiative Planning': 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-800',
     'Release Planning': 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-800',
     'Development': 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800',
-    'Released': 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-800',
+    'Ready for Release': 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-800',
     'Post Release': 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border-teal-300 dark:border-teal-800',
 };
 
@@ -73,7 +73,7 @@ const InitiativeLiveStatus = () => {
                     <option value="Initiative Planning">Initiative Planning</option>
                     <option value="Release Planning">Release Planning</option>
                     <option value="Development">Development</option>
-                    <option value="Released">Released</option>
+                    <option value="Ready for Release">Ready for Release</option>
                     <option value="Post Release">Post Release</option>
                 </select>
 
