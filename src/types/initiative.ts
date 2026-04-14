@@ -20,6 +20,7 @@ export type ReleaseStatus =
   | 'Planning'
   | 'Development'
   | 'Ready for Release'
+  | 'Released'
   | 'Pending';
 
 export type EpicStatus =

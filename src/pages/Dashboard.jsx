@@ -121,6 +121,7 @@ const Dashboard = () => {
         clearFilters,
     } = useFilters(activeInitiatives, {
         searchFields: ['name', 'techLead'],
+        storageKey: 'dashboard_filters',
     });
 
     const initiativeFilterOptions = useMemo(() => ({
@@ -150,29 +151,7 @@ const Dashboard = () => {
         })
     );
 
-    useEffect(() => {
-        loadInitiatives();
-        loadTasks();
-
-        // Listen for real-time updates from other users
-        const handleRemoteUpdate = (event) => {
-            const table = event.detail?.table;
-            console.log(`Real-time update received for: ${table}`);
-
-            // Refresh relevant data based on table
-            if (table === 'tasks') {
-                loadTasks();
-            } else {
-                // For initiatives, release plans, etc. — silent to avoid skeleton flash
-                loadInitiatives({ silent: true });
-            }
-        };
-
-        window.addEventListener('supabase-update', handleRemoteUpdate);
-        return () => window.removeEventListener('supabase-update', handleRemoteUpdate);
-    }, []);
-
-    const loadTasks = async () => {
+    const loadTasks = useCallback(async () => {
         try {
             if (!dataService.isConfigured()) {
                 setTasks([]);
@@ -183,9 +162,9 @@ const Dashboard = () => {
         } catch (err) {
             console.error("Failed to load tasks:", err);
         }
-    };
+    }, []);
 
-    const loadInitiatives = async ({ silent = false } = {}) => {
+    const loadInitiatives = useCallback(async ({ silent = false } = {}) => {
         try {
             if (!silent) setIsLoading(true);
 
@@ -205,7 +184,24 @@ const Dashboard = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        loadInitiatives();
+        loadTasks();
+
+        const handleRemoteUpdate = (event) => {
+            const table = event.detail?.table;
+            if (table === 'tasks') {
+                loadTasks();
+            } else {
+                loadInitiatives({ silent: true });
+            }
+        };
+
+        window.addEventListener('supabase-update', handleRemoteUpdate);
+        return () => window.removeEventListener('supabase-update', handleRemoteUpdate);
+    }, [loadInitiatives, loadTasks]);
 
     const debouncedSync = useCallback((initiativeId, field, value) => {
         if (syncTimeoutRef.current[initiativeId]) {

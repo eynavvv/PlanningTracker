@@ -31,7 +31,13 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem, onFillerClick, defau
     const [isExpanded, setIsExpanded] = useState(defaultExpanded);
     const [draggingItem, setDraggingItem] = useState(null); // { id, deltaDays, originalStartDate, originalEndDate }
     const [showHolidays, setShowHolidays] = useState(false);
-    const [filters, setFilters] = useState({ group: [], pm: [], ux: [], techLead: [] });
+    const [filters, setFilters] = useState(() => {
+        try {
+            const stored = localStorage.getItem('timeline_filters');
+            if (stored) return { group: [], pm: [], ux: [], techLead: [], ...JSON.parse(stored) };
+        } catch { /* ignore */ }
+        return { group: [], pm: [], ux: [], techLead: [] };
+    });
     const [openFilter, setOpenFilter] = useState(null); // 'group' | 'pm' | 'ux' | 'techLead' | null
     const scrollContainerRef = useRef(null);
     const filterRefs = useRef({});
@@ -51,6 +57,10 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem, onFillerClick, defau
         clearTimeout(tooltipTimerRef.current);
         setTooltip(null);
     };
+
+    useEffect(() => {
+        localStorage.setItem('timeline_filters', JSON.stringify(filters));
+    }, [filters]);
 
     const toggleFilter = (key, value) => {
         setFilters(prev => ({

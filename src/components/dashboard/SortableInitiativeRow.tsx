@@ -136,7 +136,9 @@ function SortableReleaseRow({ rp, initiativeId, handleReleasePhaseChange }: Sort
                   ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/30 dark:text-amber-400'
                   : rp.status === 'Ready for Release'
                     ? 'bg-green-50 text-green-600 border-green-100 dark:bg-green-900/30 dark:text-green-400'
-                    : 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-700 dark:text-slate-300'
+                    : rp.status === 'Released'
+                      ? 'bg-violet-50 text-violet-600 border-violet-100 dark:bg-violet-900/30 dark:text-violet-400'
+                      : 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-700 dark:text-slate-300'
             }`}
         >
           {RELEASE_STATUS_OPTIONS.map((opt) => (
