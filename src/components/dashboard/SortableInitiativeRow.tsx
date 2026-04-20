@@ -14,6 +14,7 @@ interface ReleasePlan {
   status: string;
   planning_end_date?: string;
   dev_end_date?: string;
+  external_release_date?: string;
 }
 
 interface Deliverable {
@@ -133,9 +134,11 @@ function SortableReleaseRow({ rp, initiativeId, handleReleasePhaseChange }: Sort
                 ? 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/30 dark:text-blue-400'
                 : rp.status === 'Development'
                   ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/30 dark:text-amber-400'
-                  : rp.status === 'Released'
+                  : rp.status === 'Ready for Release'
                     ? 'bg-green-50 text-green-600 border-green-100 dark:bg-green-900/30 dark:text-green-400'
-                    : 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-700 dark:text-slate-300'
+                    : rp.status === 'Released'
+                      ? 'bg-violet-50 text-violet-600 border-violet-100 dark:bg-violet-900/30 dark:text-violet-400'
+                      : 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-700 dark:text-slate-300'
             }`}
         >
           {RELEASE_STATUS_OPTIONS.map((opt) => (
@@ -159,7 +162,7 @@ function SortableReleaseRow({ rp, initiativeId, handleReleasePhaseChange }: Sort
               <span>Target: {format(new Date(rp.dev_end_date), 'MMM d, yyyy')}</span>
             </div>
           )}
-          {rp.status === 'Released' && (
+          {rp.status === 'Ready for Release' && rp.external_release_date && new Date(rp.external_release_date + 'T00:00:00') <= new Date(new Date().toDateString()) && (
             <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50/50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-full border border-emerald-100/50 dark:border-emerald-800/50 uppercase tracking-tight animate-bounce">
               <PartyPopper className="w-3.5 h-3.5" />
               <span>Liftoff!</span>
@@ -323,7 +326,7 @@ export function SortableInitiativeRow({
                   ? 'bg-violet-50 text-violet-600 border border-violet-100 dark:bg-violet-900/30 dark:text-violet-400'
                   : init.status === 'Development'
                     ? 'bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-900/30 dark:text-amber-400'
-                    : init.status === 'Released'
+                    : init.status === 'Ready for Release'
                       ? 'bg-green-50 text-green-600 border border-green-100 dark:bg-green-900/30 dark:text-green-400'
                       : init.status === 'Post Release'
                         ? 'bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400'

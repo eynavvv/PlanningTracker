@@ -54,7 +54,7 @@ export function ReleasePlanGroup({
   updateReleasePlan,
   onDeleteReleasePlan,
 }: ReleasePlanGroupProps) {
-  const [isExpanded, setIsExpanded] = useState(() => !['Pending', 'Released'].includes(plan.status));
+  const [isExpanded, setIsExpanded] = useState(() => !['Pending', 'Ready for Release', 'Released'].includes(plan.status));
   const [editingField, setEditingField] = useState<string | null>(null);
   const [showJiraIframe, setShowJiraIframe] = useState(false);
   const [showReqDocIframe, setShowReqDocIframe] = useState(false);
@@ -140,6 +140,7 @@ export function ReleasePlanGroup({
                 <option value="Pre-Planning">Pre-Planning</option>
                 <option value="Planning">Planning</option>
                 <option value="Development">Development</option>
+                <option value="Ready for Release">Ready for Release</option>
                 <option value="Released">Released</option>
               </select>
               <button

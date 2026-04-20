@@ -79,7 +79,7 @@ function SortableTaskRow({ task, onUpdate, onArchive, isHighlighted = false }: S
         return 'bg-purple-50 text-purple-600 border-purple-100 dark:bg-purple-900/30 dark:text-purple-400';
       case 'Development':
         return 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/30 dark:text-amber-400';
-      case 'Released':
+      case 'Ready for Release':
         return 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400';
       default:
         return 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-700 dark:text-slate-300';

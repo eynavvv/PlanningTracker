@@ -5,7 +5,7 @@ export type InitiativeStatus =
   | 'Initiative Planning'
   | 'Release Planning'
   | 'Development'
-  | 'Released'
+  | 'Ready for Release'
   | 'Post Release'
   | 'On Hold';
 
@@ -19,6 +19,7 @@ export type ReleaseStatus =
   | 'Pre-Planning'
   | 'Planning'
   | 'Development'
+  | 'Ready for Release'
   | 'Released'
   | 'Pending';
 

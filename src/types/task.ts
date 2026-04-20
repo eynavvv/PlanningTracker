@@ -1,6 +1,6 @@
 export type TaskType = 'Dev' | 'POC' | 'Research';
 export type TaskBacklog = 'R&D' | 'Product' | 'UX';
-export type TaskPhase = 'Planning' | 'Development' | 'Released';
+export type TaskPhase = 'Planning' | 'Development' | 'Ready for Release';
 
 export interface Task {
   id: string;
@@ -68,4 +68,4 @@ export interface UpdateTaskInput {
 
 export const TASK_TYPE_OPTIONS: TaskType[] = ['Dev', 'POC', 'Research'];
 export const TASK_BACKLOG_OPTIONS: TaskBacklog[] = ['R&D', 'Product', 'UX'];
-export const TASK_PHASE_OPTIONS: TaskPhase[] = ['Planning', 'Development', 'Released'];
+export const TASK_PHASE_OPTIONS: TaskPhase[] = ['Planning', 'Development', 'Ready for Release'];

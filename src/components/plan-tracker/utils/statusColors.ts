@@ -2,6 +2,7 @@ export function getStatusColor(status: string | undefined | null): string {
   switch (status) {
     case 'Done':
     case 'Released':
+    case 'Ready for Release':
       return 'bg-green-100 text-green-700 focus:ring-green-400 dark:bg-green-900/30 dark:text-green-400';
     case 'Post Release':
       return 'bg-emerald-100 text-emerald-700 focus:ring-emerald-400 dark:bg-emerald-900/30 dark:text-emerald-400';

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import type { FilterState, FilterConfig } from '@/types';
 
 const initialFilters: FilterState = {
@@ -10,11 +10,28 @@ const initialFilters: FilterState = {
   techLead: [],
 };
 
+function loadFilters(storageKey?: string): FilterState {
+  if (!storageKey) return initialFilters;
+  try {
+    const stored = localStorage.getItem(storageKey);
+    if (stored) return { ...initialFilters, ...JSON.parse(stored) };
+  } catch {
+    // ignore
+  }
+  return initialFilters;
+}
+
 export function useFilters<T extends Record<string, unknown>>(
   items: T[],
-  config: FilterConfig<T>
+  config: FilterConfig<T> & { storageKey?: string }
 ) {
-  const [filters, setFilters] = useState<FilterState>(initialFilters);
+  const storageKey = config.storageKey;
+  const [filters, setFilters] = useState<FilterState>(() => loadFilters(storageKey));
+
+  useEffect(() => {
+    if (!storageKey) return;
+    localStorage.setItem(storageKey, JSON.stringify(filters));
+  }, [filters, storageKey]);
 
   const updateFilter = useCallback(<K extends keyof FilterState>(key: K, value: FilterState[K]) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -33,8 +50,9 @@ export function useFilters<T extends Record<string, unknown>>(
   );
 
   const clearFilters = useCallback(() => {
+    if (storageKey) localStorage.removeItem(storageKey);
     setFilters(initialFilters);
-  }, []);
+  }, [storageKey]);
 
   const filteredItems = useMemo(() => {
     return items.filter((item) => {

@@ -70,6 +70,7 @@ const INIT_STATUS_STYLE: Record<string, { bg: string; color: string; border: str
 
 const RELEASE_STATUS_STYLE: Record<string, { bg: string; color: string }> = {
   'Ready for Release': { bg: '#dcfce7', color: '#15803d' },
+  'Released':          { bg: '#ede9fe', color: '#6d28d9' },
   'Development':       { bg: '#fef3c7', color: '#b45309' },
   'Planning':          { bg: '#dbeafe', color: '#1d4ed8' },
   'Pre-Planning':      { bg: '#cffafe', color: '#0e7490' },
@@ -226,6 +227,7 @@ const INIT_BADGE_CLASS: Record<string, string> = {
 
 const RELEASE_BADGE_CLASS: Record<string, string> = {
   'Ready for Release': 'bg-green-100 text-green-700',
+  'Released':          'bg-violet-100 text-violet-700',
   'Development':       'bg-amber-100 text-amber-700',
   'Planning':          'bg-blue-100 text-blue-700',
   'Pre-Planning':      'bg-cyan-100 text-cyan-700',

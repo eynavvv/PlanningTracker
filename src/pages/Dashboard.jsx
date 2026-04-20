@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Target, Plus, Calendar, Rocket, Archive, ArchiveRestore, ChevronDown, ChevronUp, Trash2, Search, X } from 'lucide-react';
+import { Target, Plus, Calendar, Rocket, Archive, ArchiveRestore, ChevronDown, ChevronUp, Trash2, Search, X, FileDown } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import NewInitiativeModal from '../components/NewInitiativeModal';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import TimelineView from '../components/TimelineView';
-import { DashboardHeader, SortableInitiativeRow, FilterChipBar, RoadmapFillers, STATUS_OPTIONS, PM_OPTIONS, UX_OPTIONS, GROUP_OPTIONS } from '../components/dashboard';
+import { DashboardHeader, SortableInitiativeRow, FilterChipBar, RoadmapFillers, BoardExportModal, STATUS_OPTIONS, PM_OPTIONS, UX_OPTIONS, GROUP_OPTIONS } from '../components/dashboard';
 import { AddTaskModal } from '../components/AddTaskModal';
 import { DashboardSkeleton } from '../components/skeletons';
 import { useFilters } from '../hooks/useFilters';
@@ -102,6 +102,7 @@ const Dashboard = () => {
         () => localStorage.getItem('dashboard_active_tab') || 'timeline'
     );
     const [highlightedFillerId, setHighlightedFillerId] = useState(null);
+    const [isExportOpen, setIsExportOpen] = useState(false);
     const navigate = useNavigate();
     const syncTimeoutRef = useRef({});
 
@@ -120,6 +121,7 @@ const Dashboard = () => {
         clearFilters,
     } = useFilters(activeInitiatives, {
         searchFields: ['name', 'techLead'],
+        storageKey: 'dashboard_filters',
     });
 
     const initiativeFilterOptions = useMemo(() => ({
@@ -149,29 +151,7 @@ const Dashboard = () => {
         })
     );
 
-    useEffect(() => {
-        loadInitiatives();
-        loadTasks();
-
-        // Listen for real-time updates from other users
-        const handleRemoteUpdate = (event) => {
-            const table = event.detail?.table;
-            console.log(`Real-time update received for: ${table}`);
-
-            // Refresh relevant data based on table
-            if (table === 'tasks') {
-                loadTasks();
-            } else {
-                // For initiatives, release plans, etc. — silent to avoid skeleton flash
-                loadInitiatives({ silent: true });
-            }
-        };
-
-        window.addEventListener('supabase-update', handleRemoteUpdate);
-        return () => window.removeEventListener('supabase-update', handleRemoteUpdate);
-    }, []);
-
-    const loadTasks = async () => {
+    const loadTasks = useCallback(async () => {
         try {
             if (!dataService.isConfigured()) {
                 setTasks([]);
@@ -182,9 +162,9 @@ const Dashboard = () => {
         } catch (err) {
             console.error("Failed to load tasks:", err);
         }
-    };
+    }, []);
 
-    const loadInitiatives = async ({ silent = false } = {}) => {
+    const loadInitiatives = useCallback(async ({ silent = false } = {}) => {
         try {
             if (!silent) setIsLoading(true);
 
@@ -204,7 +184,24 @@ const Dashboard = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        loadInitiatives();
+        loadTasks();
+
+        const handleRemoteUpdate = (event) => {
+            const table = event.detail?.table;
+            if (table === 'tasks') {
+                loadTasks();
+            } else {
+                loadInitiatives({ silent: true });
+            }
+        };
+
+        window.addEventListener('supabase-update', handleRemoteUpdate);
+        return () => window.removeEventListener('supabase-update', handleRemoteUpdate);
+    }, [loadInitiatives, loadTasks]);
 
     const debouncedSync = useCallback((initiativeId, field, value) => {
         if (syncTimeoutRef.current[initiativeId]) {
@@ -550,22 +547,31 @@ const Dashboard = () => {
         <div className="flex flex-col gap-0">
             <DashboardHeader />
 
-            {/* Tab Bar */}
-            <div className="flex gap-1 border-b border-slate-200 dark:border-slate-700">
-                {TABS.map(({ key, label, icon: Icon }) => (
-                    <button
-                        key={key}
-                        onClick={() => { setActiveTab(key); localStorage.setItem('dashboard_active_tab', key); }}
-                        className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors ${
-                            activeTab === key
-                                ? 'text-ss-primary dark:text-blue-400'
-                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-                        }`}
-                    >
-                        <Icon className="w-4 h-4" />
-                        {label}
-                    </button>
-                ))}
+            {/* Tab Bar + Export button */}
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700">
+                <div className="flex gap-1">
+                    {TABS.map(({ key, label, icon: Icon }) => (
+                        <button
+                            key={key}
+                            onClick={() => { setActiveTab(key); localStorage.setItem('dashboard_active_tab', key); }}
+                            className={`flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors ${
+                                activeTab === key
+                                    ? 'text-ss-primary dark:text-blue-400'
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                            }`}
+                        >
+                            <Icon className="w-4 h-4" />
+                            {label}
+                        </button>
+                    ))}
+                </div>
+                <button
+                    onClick={() => setIsExportOpen(true)}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                >
+                    <FileDown className="w-3.5 h-3.5" />
+                    Export
+                </button>
             </div>
 
             <div className="mt-6 flex flex-col gap-6">
@@ -740,6 +746,13 @@ const Dashboard = () => {
                     : 'Are you sure you want to delete this initiative? All associated planning data, release plans, and epics will be permanently removed.'}
                 itemName={deleteModal.item?.name}
             />
+
+            {isExportOpen && (
+                <BoardExportModal
+                    initiatives={activeInitiatives}
+                    onClose={() => setIsExportOpen(false)}
+                />
+            )}
         </div>
     );
 };
