@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Layers, FileText, Link as LinkIcon, Info, Trash2, ExternalLink, X, Check } from 'lucide-react';
+import { ChevronDown, ChevronRight, Layers, FileText, Link as LinkIcon, Info, Trash2, ExternalLink, X, Check, ArrowRightLeft } from 'lucide-react';
 import { getStatusColor } from '../utils/statusColors';
 
 interface ReleasePlan {
@@ -24,6 +24,7 @@ interface ReleasePlanGroupProps {
   planIndex: number;
   updateReleasePlan: (planIndex: number, field: string, value: string) => void;
   onDeleteReleasePlan: (planIndex: number) => void;
+  onMoveReleasePlan: (planIndex: number) => void;
   updateEpic: (planIndex: number, epicIndex: number, field: string, value: string) => void;
   onDeleteEpic: (planIndex: number, epicIndex: number) => void;
   onAddEpic: (planIndex: number) => void;
@@ -53,6 +54,7 @@ export function ReleasePlanGroup({
   planIndex,
   updateReleasePlan,
   onDeleteReleasePlan,
+  onMoveReleasePlan,
 }: ReleasePlanGroupProps) {
   const [isExpanded, setIsExpanded] = useState(() => !['Pending', 'Ready for Release', 'Released'].includes(plan.status));
   const [editingField, setEditingField] = useState<string | null>(null);
@@ -143,6 +145,14 @@ export function ReleasePlanGroup({
                 <option value="Ready for Release">Ready for Release</option>
                 <option value="Released">Released</option>
               </select>
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onMoveReleasePlan(planIndex); }}
+                className="p-2 text-slate-300 hover:text-blue-500 transition-colors rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                title="Move to another initiative"
+              >
+                <ArrowRightLeft className="w-4 h-4" />
+              </button>
               <button
                 type="button"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDeleteReleasePlan(planIndex); }}

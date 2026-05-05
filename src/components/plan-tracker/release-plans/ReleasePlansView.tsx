@@ -4,6 +4,7 @@ import { ReleasePlanGroup } from './ReleasePlanGroup';
 import AddReleaseModal from '../../AddReleaseModal';
 import AddEpicModal from '../../AddEpicModal';
 import DeleteConfirmationModal from '../../DeleteConfirmationModal';
+import MoveReleaseModal from '../../MoveReleaseModal';
 import {
   DndContext,
   closestCenter,
@@ -50,12 +51,14 @@ interface ReleasePlan {
 interface ReleasePlansViewProps {
   data: {
     Initiative?: {
+      id?: string;
       ReleasePlan?: ReleasePlan[];
     };
   };
   updateReleasePlan: (planIndex: number, field: string, value: string) => void;
   addReleasePlan: (name: string) => Promise<void>;
   deleteReleasePlan: (planIndex: number) => void;
+  moveReleasePlan: (planIndex: number, targetInitiativeId: string, targetInitiativeName?: string) => Promise<void>;
   reorderReleasePlans: (orderedIds: string[]) => void;
   updateEpic: (planIndex: number, epicIndex: number, field: string, value: string) => void;
   addEpic: (planIndex: number, name: string) => Promise<void>;
@@ -67,6 +70,7 @@ interface SortableReleaseCardProps {
   planIndex: number;
   updateReleasePlan: (planIndex: number, field: string, value: string) => void;
   onDeleteReleasePlan: (planIndex: number) => void;
+  onMoveReleasePlan: (planIndex: number) => void;
   updateEpic: (planIndex: number, epicIndex: number, field: string, value: string) => void;
   onDeleteEpic: (planIndex: number, epicIndex: number) => void;
   onAddEpic: (planIndex: number) => void;
@@ -77,6 +81,7 @@ function SortableReleaseCard({
   planIndex,
   updateReleasePlan,
   onDeleteReleasePlan,
+  onMoveReleasePlan,
   updateEpic,
   onDeleteEpic,
   onAddEpic,
@@ -106,6 +111,7 @@ function SortableReleaseCard({
         planIndex={planIndex}
         updateReleasePlan={updateReleasePlan}
         onDeleteReleasePlan={onDeleteReleasePlan}
+        onMoveReleasePlan={onMoveReleasePlan}
         updateEpic={updateEpic}
         onDeleteEpic={onDeleteEpic}
         onAddEpic={onAddEpic}
@@ -127,13 +133,20 @@ export function ReleasePlansView({
   updateReleasePlan,
   addReleasePlan,
   deleteReleasePlan,
+  moveReleasePlan,
   reorderReleasePlans,
   updateEpic,
   addEpic,
   deleteEpic,
 }: ReleasePlansViewProps) {
   const releasePlans = data.Initiative?.ReleasePlan || [];
+  const currentInitiativeId = data.Initiative?.id || '';
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [moveModal, setMoveModal] = useState<{ isOpen: boolean; planIndex: number | null; goal: string }>({
+    isOpen: false,
+    planIndex: null,
+    goal: '',
+  });
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -180,6 +193,16 @@ export function ReleasePlansView({
     if (activePlanIndex !== null) {
       await addEpic(activePlanIndex, name);
     }
+  };
+
+  const handleMoveReleaseRequest = (idx: number) => {
+    const plan = releasePlans[idx];
+    setMoveModal({ isOpen: true, planIndex: idx, goal: plan?.goal || '' });
+  };
+
+  const handleConfirmMove = async (targetInitiativeId: string, targetInitiativeName?: string) => {
+    if (moveModal.planIndex === null) return;
+    await moveReleasePlan(moveModal.planIndex, targetInitiativeId, targetInitiativeName);
   };
 
   const handleDeleteReleaseRequest = (idx: number, name: string) => {
@@ -245,6 +268,7 @@ export function ReleasePlansView({
                   planIndex={idx}
                   updateReleasePlan={updateReleasePlan}
                   onDeleteReleasePlan={(i) => handleDeleteReleaseRequest(i, plan.goal)}
+                  onMoveReleasePlan={handleMoveReleaseRequest}
                   updateEpic={updateEpic}
                   onDeleteEpic={(pi, ei) => handleDeleteEpicRequest(pi, ei, plan.Epics?.[ei]?.Name || '')}
                   onAddEpic={handleAddEpicClick}
@@ -265,6 +289,14 @@ export function ReleasePlansView({
         isOpen={isEpicModalOpen}
         onClose={() => setIsEpicModalOpen(false)}
         onSubmit={handleEpicSubmit}
+      />
+
+      <MoveReleaseModal
+        isOpen={moveModal.isOpen}
+        onClose={() => setMoveModal({ isOpen: false, planIndex: null, goal: '' })}
+        onSubmit={handleConfirmMove}
+        currentInitiativeId={currentInitiativeId}
+        releaseGoal={moveModal.goal}
       />
 
       <DeleteConfirmationModal

@@ -36,6 +36,7 @@ class DataService {
                 group: item.group || '',
                 techLead: item.tech_lead || '',
                 developers: item.developers || [],
+                isArchived: item.is_archived || false,
             }));
         } catch (error) {
             console.error('Error fetching initiatives:', error);
@@ -658,6 +659,53 @@ class DataService {
             return { success: true };
         } catch (error) {
             console.error('Error deleting release plan:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Move a release plan (and its epics) from one initiative to another.
+     * Updates release_plans.initiative_id, epics.initiative_id for all linked epics,
+     * and assigns a fresh order_index at the end of the destination's release list.
+     */
+    async moveReleasePlan(currentInitiativeId, planId, targetInitiativeId) {
+        if (currentInitiativeId === targetInitiativeId) {
+            return { success: true };
+        }
+        try {
+            // Compute the next order_index in the destination so the moved plan
+            // lands at the bottom of the target initiative's list.
+            const { data: destPlans, error: destError } = await supabase
+                .from('release_plans')
+                .select('order_index')
+                .eq('initiative_id', targetInitiativeId)
+                .order('order_index', { ascending: false })
+                .limit(1);
+            if (destError) throw destError;
+            const nextOrderIndex = (destPlans?.[0]?.order_index ?? -1) + 1;
+
+            const { error: planError } = await supabase
+                .from('release_plans')
+                .update({
+                    initiative_id: targetInitiativeId,
+                    order_index: nextOrderIndex,
+                })
+                .eq('id', planId)
+                .eq('initiative_id', currentInitiativeId);
+            if (planError) throw planError;
+
+            // Re-parent any epics that were tied to the old initiative.
+            // Supabase JS has no transactions; if this fails the release row
+            // is already moved — log and surface the error so the caller can refetch.
+            const { error: epicsError } = await supabase
+                .from('epics')
+                .update({ initiative_id: targetInitiativeId })
+                .eq('release_plan_id', planId);
+            if (epicsError) throw epicsError;
+
+            return { success: true };
+        } catch (error) {
+            console.error('Error moving release plan:', error);
             throw error;
         }
     }
