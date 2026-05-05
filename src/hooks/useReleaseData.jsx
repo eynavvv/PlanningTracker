@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { dataService } from '../services/dataService.js';
+import { queryKeys } from '../lib/queryKeys';
+import { toast } from 'sonner';
 
 const initialData = {
     Initiative: {
@@ -43,6 +46,7 @@ export function ReleaseProvider({ children, planId }) {
     const [error, setError] = useState(null);
     const syncTimeoutRef = useRef({});
     const releaseMetadataRef = useRef(null);
+    const queryClient = useQueryClient();
 
     useEffect(() => {
         if (!planId) return;
@@ -390,6 +394,41 @@ export function ReleaseProvider({ children, planId }) {
         }
     }, [planId, loadReleaseData]);
 
+    const moveReleasePlan = useCallback(async (planIndex, targetInitiativeId, targetInitiativeName) => {
+        const plan = data.Initiative.ReleasePlan[planIndex];
+        if (!plan || !targetInitiativeId || targetInitiativeId === planId) return;
+
+        const previousList = data.Initiative.ReleasePlan;
+        setData(prev => ({
+            ...prev,
+            Initiative: {
+                ...prev.Initiative,
+                ReleasePlan: prev.Initiative.ReleasePlan.filter((_, idx) => idx !== planIndex)
+            }
+        }));
+
+        try {
+            if (dataService.isConfigured()) {
+                await dataService.moveReleasePlan(planId, plan.id, targetInitiativeId);
+                queryClient.invalidateQueries({ queryKey: queryKeys.initiatives.detail(targetInitiativeId) });
+                queryClient.invalidateQueries({ queryKey: queryKeys.initiatives.timeline() });
+                toast.success(
+                    targetInitiativeName
+                        ? `Moved "${plan.goal || 'release'}" to ${targetInitiativeName}`
+                        : 'Release moved'
+                );
+            }
+        } catch (err) {
+            console.error('Failed to move release plan:', err);
+            toast.error('Failed to move release', { description: err.message });
+            setData(prev => ({
+                ...prev,
+                Initiative: { ...prev.Initiative, ReleasePlan: previousList }
+            }));
+            loadReleaseData({ silent: true });
+        }
+    }, [data.Initiative.ReleasePlan, planId, queryClient]);
+
     const deleteReleasePlan = useCallback(async (planIndex) => {
         const plan = data.Initiative.ReleasePlan[planIndex];
         if (!plan) return;
@@ -558,6 +597,7 @@ export function ReleaseProvider({ children, planId }) {
         updateReleasePlan,
         addReleasePlan,
         deleteReleasePlan,
+        moveReleasePlan,
         reorderReleasePlans,
         addEpic,
         updateEpic,
