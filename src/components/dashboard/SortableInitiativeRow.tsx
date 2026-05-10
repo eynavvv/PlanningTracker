@@ -43,33 +43,29 @@ interface Initiative {
   deliverables?: Deliverable[];
 }
 
-// Helper function to get the target date based on initiative phase
+// Helper function to get the earliest external_release_date across all releases
+// that have not yet been released
+function getEarliestReleaseTargetDate(init: Initiative): string | null {
+  const dates = init.releasePlans
+    ?.filter(rp => rp.status !== 'Released')
+    .map(rp => rp.external_release_date)
+    .filter((date): date is string => !!date)
+    .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+  return dates?.[0] || null;
+}
+
+// Helper function to get the target date: earliest dev_end_date across releases
+// that have not yet been released. Falls back to initial planning end date.
 function getTargetDate(init: Initiative): string | null {
-  switch (init.status) {
-    case 'Initiative Planning':
-      return init.initialPlanning?.planned_end_date || null;
-
-    case 'Release Planning': {
-      // Get earliest planning_end_date from all releases
-      const planningDates = init.releasePlans
-        ?.map(rp => rp.planning_end_date)
-        .filter((date): date is string => !!date)
-        .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
-      return planningDates?.[0] || null;
-    }
-
-    case 'Development': {
-      // Get earliest dev_end_date from all releases
-      const devDates = init.releasePlans
-        ?.map(rp => rp.dev_end_date)
-        .filter((date): date is string => !!date)
-        .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
-      return devDates?.[0] || null;
-    }
-
-    default:
-      return null;
+  const upcomingDevEndDates = init.releasePlans
+    ?.filter(rp => rp.status !== 'Released')
+    .map(rp => rp.dev_end_date)
+    .filter((date): date is string => !!date)
+    .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+  if (upcomingDevEndDates && upcomingDevEndDates.length > 0) {
+    return upcomingDevEndDates[0];
   }
+  return init.initialPlanning?.planned_end_date || null;
 }
 
 interface SortableReleaseRowProps {
@@ -110,9 +106,9 @@ function SortableReleaseRow({ rp, initiativeId, handleReleasePhaseChange }: Sort
           <GripVertical className="w-3.5 h-3.5" />
         </button>
       </td>
-      <td className="px-6 py-3">
-        <div className="flex items-center gap-2 pl-6">
-          <Rocket className="w-3.5 h-3.5 text-blue-400" />
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-2 pl-6 min-w-0">
+          <Rocket className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
           <Link
             to={`/plan/${encodeURIComponent(initiativeId)}?view=release_plans#release-${rp.id}`}
             className="text-slate-600 dark:text-slate-300 font-medium text-xs hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors truncate"
@@ -122,11 +118,11 @@ function SortableReleaseRow({ rp, initiativeId, handleReleasePhaseChange }: Sort
           </Link>
         </div>
       </td>
-      <td className="px-6 py-3">
+      <td className="px-4 py-3">
         <select
           value={rp.status}
           onChange={(e) => handleReleasePhaseChange(initiativeId, rp.id, e.target.value)}
-          className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider w-full text-center border focus:ring-2 focus:ring-blue-400 outline-none transition-all ${rp.status === 'Pending'
+          className={`px-2 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-tight w-full text-center border focus:ring-2 focus:ring-blue-400 outline-none transition-all ${rp.status === 'Pending'
             ? 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-700 dark:text-slate-300'
             : rp.status === 'Pre-Planning'
               ? 'bg-cyan-50 text-cyan-600 border-cyan-100 dark:bg-cyan-900/30 dark:text-cyan-400'
@@ -148,7 +144,7 @@ function SortableReleaseRow({ rp, initiativeId, handleReleasePhaseChange }: Sort
           ))}
         </select>
       </td>
-      <td className="px-6 py-3" colSpan={3}>
+      <td className="px-4 py-3" colSpan={4}>
         <div className="flex items-center gap-4 whitespace-nowrap">
           {rp.status === 'Planning' && rp.planning_end_date && (
             <div className="flex items-center gap-1.5 text-[11px] text-purple-600 dark:text-purple-400 font-bold bg-purple-50/50 dark:bg-purple-900/30 px-3 py-1.5 rounded-full border border-purple-100/50 dark:border-purple-800/50 uppercase tracking-tight">
@@ -249,7 +245,7 @@ export function SortableInitiativeRow({
             <GripVertical className="w-4 h-4" />
           </button>
         </td>
-        <td className="px-6 py-4 font-medium text-slate-900 dark:text-slate-100">
+        <td className="px-4 py-4 font-medium text-slate-900 dark:text-slate-100">
           <div className="flex items-center gap-2">
             {init.releasePlans && init.releasePlans.length > 0 && (
               <button
@@ -314,11 +310,11 @@ export function SortableInitiativeRow({
             </div>
           </div>
         </td>
-        <td className="px-6 py-4">
+        <td className="px-4 py-4">
           <select
             value={init.status}
             onChange={(e) => handleFieldChange(init.id, 'status', e.target.value)}
-            className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider w-full text-center border-none focus:ring-2 focus:ring-blue-400 outline-none transition-all ${init.status === 'Pending'
+            className={`px-2 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-tight w-full text-center border-none focus:ring-2 focus:ring-blue-400 outline-none transition-all ${init.status === 'Pending'
               ? 'bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-700 dark:text-slate-300'
               : init.status === 'Initiative Planning'
                 ? 'bg-sky-50 text-sky-600 border border-sky-100 dark:bg-sky-900/30 dark:text-sky-400'
@@ -328,9 +324,11 @@ export function SortableInitiativeRow({
                     ? 'bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-900/30 dark:text-amber-400'
                     : init.status === 'Ready for Release'
                       ? 'bg-green-50 text-green-600 border border-green-100 dark:bg-green-900/30 dark:text-green-400'
-                      : init.status === 'Post Release'
-                        ? 'bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400'
-                        : 'bg-slate-50 text-slate-600 border border-slate-100 dark:bg-slate-700 dark:text-slate-300'
+                      : init.status === 'Released'
+                        ? 'bg-violet-50 text-violet-600 border border-violet-100 dark:bg-violet-900/30 dark:text-violet-400'
+                        : init.status === 'Post Release'
+                          ? 'bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400'
+                          : 'bg-slate-50 text-slate-600 border border-slate-100 dark:bg-slate-700 dark:text-slate-300'
               }`}
           >
             {STATUS_OPTIONS.map((opt) => (
@@ -340,26 +338,45 @@ export function SortableInitiativeRow({
             ))}
           </select>
         </td>
-        <td className="px-6 py-4">
+        <td className="px-4 py-4">
           {(() => {
             const targetDate = getTargetDate(init);
             if (!targetDate) {
               return (
-                <div className="flex items-center gap-1.5 text-sm text-slate-400 dark:text-slate-500">
-                  <Calendar className="w-4 h-4" />
+                <div className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                  <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
                   <span>—</span>
                 </div>
               );
             }
             return (
-              <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
-                <Calendar className="w-4 h-4" />
+              <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
                 <span>{format(new Date(targetDate), 'MMM d, yyyy')}</span>
               </div>
             );
           })()}
         </td>
-        <td className="px-6 py-4">
+        <td className="px-4 py-4">
+          {(() => {
+            const releaseTargetDate = getEarliestReleaseTargetDate(init);
+            if (!releaseTargetDate) {
+              return (
+                <div className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                  <Rocket className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>—</span>
+                </div>
+              );
+            }
+            return (
+              <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                <Rocket className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>{format(new Date(releaseTargetDate), 'MMM d, yyyy')}</span>
+              </div>
+            );
+          })()}
+        </td>
+        <td className="px-4 py-4">
           <select
             value={init.group || ''}
             onChange={(e) => handleFieldChange(init.id, 'group', e.target.value)}
@@ -373,7 +390,7 @@ export function SortableInitiativeRow({
             ))}
           </select>
         </td>
-        <td className="px-6 py-4 text-right">
+        <td className="px-2 py-4 text-right">
           <div className="relative group/archive inline-block">
             <button
               type="button"

@@ -50,7 +50,14 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem, onFillerClick, defau
         clearTimeout(tooltipTimerRef.current);
         tooltipTimerRef.current = setTimeout(() => {
             const flipUp = mouseY > window.innerHeight * 0.55;
-            setTooltip({ x: mouseX, y: flipUp ? mouseY - 14 : mouseY + 18, flipUp, content });
+            // Clamp x so the centered tooltip (max width ~320px = w-80) stays within the viewport
+            const halfMax = 170;
+            const margin = 8;
+            const clampedX = Math.min(
+                Math.max(mouseX, halfMax + margin),
+                window.innerWidth - halfMax - margin
+            );
+            setTooltip({ x: clampedX, y: flipUp ? mouseY - 14 : mouseY + 18, flipUp, content });
         }, 500);
     };
     const hideTooltip = () => {
@@ -812,7 +819,7 @@ const TimelineView = ({ data, roadmapFillers, onUpdateItem, onFillerClick, defau
 
                                 return (
                                     <div key={name} className="relative flex flex-col gap-2 border-b border-slate-50 dark:border-slate-800 pb-2">
-                                        <div className="sticky left-0 z-10 flex items-center gap-2 mb-3 pl-0 py-1 w-fit max-w-[calc(100vw-300px)]">
+                                        <div className="sticky left-0 z-10 flex items-center gap-2 mb-3 pl-0 py-1 w-fit max-w-[min(75vw,800px)]">
                                             {/* Decorative Background for legibility when scrolling */}
                                             <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-transparent dark:from-slate-900 dark:via-slate-900/95 dark:to-transparent -z-10 rounded-r-xl" />
 

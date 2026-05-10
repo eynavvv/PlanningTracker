@@ -6,6 +6,7 @@ export type InitiativeStatus =
   | 'Release Planning'
   | 'Development'
   | 'Ready for Release'
+  | 'Released'
   | 'Post Release'
   | 'On Hold';
 

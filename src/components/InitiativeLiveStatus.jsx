@@ -15,6 +15,7 @@ const STATUS_COLORS = {
     'Release Planning': 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-800',
     'Development': 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800',
     'Ready for Release': 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-800',
+    'Released': 'bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border-violet-300 dark:border-violet-800',
     'Post Release': 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 border-teal-300 dark:border-teal-800',
 };
 
@@ -74,6 +75,7 @@ const InitiativeLiveStatus = () => {
                     <option value="Release Planning">Release Planning</option>
                     <option value="Development">Development</option>
                     <option value="Ready for Release">Ready for Release</option>
+                    <option value="Released">Released</option>
                     <option value="Post Release">Post Release</option>
                 </select>
 
@@ -121,7 +123,7 @@ const InitiativeLiveStatus = () => {
             </div>
 
             {/* Main 2-column area */}
-            <div className="grid grid-cols-2 gap-4 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
 
                 {/* Left: Current Focus + Activity Feed */}
                 <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 flex flex-col gap-4">
@@ -216,7 +218,7 @@ const InitiativeLiveStatus = () => {
                                     className="w-full text-sm p-2.5 rounded-lg border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 outline-none focus:border-ss-primary transition-all font-bold text-ss-navy dark:text-slate-100"
                                 />
                             </div>
-                            <div className="w-34">
+                            <div className="w-36">
                                 <input
                                     type="date"
                                     value={newDeliverableDate}

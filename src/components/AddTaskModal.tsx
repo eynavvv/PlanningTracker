@@ -132,7 +132,7 @@ export function AddTaskModal({ isOpen, onClose, onSubmit }: AddTaskModalProps) {
             </div>
 
             {/* Type, Backlog, Phase row */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Type
@@ -185,7 +185,7 @@ export function AddTaskModal({ isOpen, onClose, onSubmit }: AddTaskModalProps) {
             </div>
 
             {/* PM, UX, Group row */}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   PM
@@ -239,7 +239,7 @@ export function AddTaskModal({ isOpen, onClose, onSubmit }: AddTaskModalProps) {
             </div>
 
             {/* Developers and Target Date row */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Developers
