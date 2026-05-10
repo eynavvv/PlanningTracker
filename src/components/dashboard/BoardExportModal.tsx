@@ -66,6 +66,7 @@ const INIT_STATUS_STYLE: Record<string, { bg: string; color: string; border: str
   'Development':       { bg: '#fef3c7', color: '#b45309', border: '#fcd34d' },
   'Release Planning':  { bg: '#ede9fe', color: '#6d28d9', border: '#c4b5fd' },
   'Ready for Release': { bg: '#dcfce7', color: '#15803d', border: '#86efac' },
+  'Released':          { bg: '#ede9fe', color: '#6d28d9', border: '#c4b5fd' },
 };
 
 const RELEASE_STATUS_STYLE: Record<string, { bg: string; color: string }> = {
@@ -223,6 +224,7 @@ const INIT_BADGE_CLASS: Record<string, string> = {
   'Development':       'bg-amber-100 text-amber-800 border-amber-300',
   'Release Planning':  'bg-purple-100 text-purple-800 border-purple-300',
   'Ready for Release': 'bg-green-100 text-green-800 border-green-300',
+  'Released':          'bg-violet-100 text-violet-800 border-violet-300',
 };
 
 const RELEASE_BADGE_CLASS: Record<string, string> = {

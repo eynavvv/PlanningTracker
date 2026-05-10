@@ -1,5 +1,5 @@
 // Dashboard dropdown options based on user schema
-export const STATUS_OPTIONS = ['Pending', 'Initiative Planning', 'Release Planning', 'Development', 'Ready for Release', 'Post Release'];
+export const STATUS_OPTIONS = ['Pending', 'Initiative Planning', 'Release Planning', 'Development', 'Ready for Release', 'Released', 'Post Release'];
 export const PM_OPTIONS = ['Naama', 'Asaf', 'Sapir'];
 export const UX_OPTIONS = ['Tal', 'Maya', 'Naor'];
 export const GROUP_OPTIONS = ['Zebra', 'Pegasus'];
